@@ -86,8 +86,16 @@ class LatexWidget extends Widget {
  * A renderer for raw html.
  */
 export
-class HTMLRenderer implements IRenderer<Widget> {
+class HTMLRenderer implements IRenderer {
   mimetypes = ['text/html'];
+
+  get safe() {
+    return false;
+  }
+
+  get sanitizable() {
+    return true;
+  }
 
   render(mimetype: string, data: string): Widget {
     return new HTMLWidget(data);
@@ -99,8 +107,16 @@ class HTMLRenderer implements IRenderer<Widget> {
  * A renderer for `<img>` data.
  */
 export
-class ImageRenderer implements IRenderer<Widget> {
+class ImageRenderer implements IRenderer {
   mimetypes = ['image/png', 'image/jpeg', 'image/gif'];
+
+  get safe() {
+    return false;
+  }
+
+  get sanitizable() {
+    return true;
+  }
 
   render(mimetype: string, data: string): Widget {
     let w = new Widget();
@@ -116,8 +132,16 @@ class ImageRenderer implements IRenderer<Widget> {
  * A renderer for plain text and Jupyter console text data.
  */
 export
-class TextRenderer implements IRenderer<Widget> {
+class TextRenderer implements IRenderer {
   mimetypes = ['text/plain', 'application/vnd.jupyter.console-text'];
+
+  get safe() {
+    return true;
+  }
+
+  get sanitizable() {
+    return false;
+  }
 
   render(mimetype: string, data: string): Widget {
     let w = new Widget();
@@ -134,8 +158,16 @@ class TextRenderer implements IRenderer<Widget> {
  * A renderer for raw `<script>` data.
  */
 export
-class JavascriptRenderer implements IRenderer<Widget> {
+class JavascriptRenderer implements IRenderer {
   mimetypes = ['text/javascript', 'application/javascript'];
+
+  get safe() {
+    return false;
+  }
+
+  get sanitizable() {
+    return false;
+  }
 
   render(mimetype: string, data: string): Widget {
     let w = new Widget();
@@ -152,8 +184,16 @@ class JavascriptRenderer implements IRenderer<Widget> {
  * A renderer for `<svg>` data.
  */
 export
-class SVGRenderer implements IRenderer<Widget> {
+class SVGRenderer implements IRenderer {
   mimetypes = ['image/svg+xml'];
+
+  get safe() {
+    return false;
+  }
+
+  get sanitizable() {
+    return true;
+  }
 
   render(mimetype: string, data: string): Widget {
     let w = new Widget();
@@ -171,8 +211,16 @@ class SVGRenderer implements IRenderer<Widget> {
  * A renderer for PDF data.
  */
 export
-class PDFRenderer implements IRenderer<Widget> {
+class PDFRenderer implements IRenderer {
   mimetypes = ['application/pdf'];
+
+  get safe() {
+    return false;
+  }
+
+  get sanitizable() {
+    return false;
+  }
 
   render(mimetype: string, data: string): Widget {
     let w = new Widget();
@@ -187,23 +235,10 @@ class PDFRenderer implements IRenderer<Widget> {
 
 
 /**
- * A renderer for LateX data.
- */
-export
-class LatexRenderer implements IRenderer<Widget> {
-  mimetypes = ['text/latex'];
-
-  render(mimetype: string, data: string): Widget {
-    return new LatexWidget(data);
-  }
-}
-
-
-/**
  * A renderer for Jupyter Markdown data.
  */
 export
-class MarkdownRenderer implements IRenderer<Widget> {
+class MarkdownRenderer implements IRenderer {
   mimetypes = ['text/markdown'];
 
   render(mimetype: string, text: string): Widget {

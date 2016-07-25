@@ -342,7 +342,7 @@ namespace ConsolePanel {
     /**
      * The mime renderer for the console panel.
      */
-    rendermime: RenderMime<Widget>;
+    rendermime: RenderMime;
 
     /**
      * The session for the console panel.

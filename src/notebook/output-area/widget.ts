@@ -222,7 +222,7 @@ class OutputAreaWidget extends Widget {
    * #### Notes
    * This is a read-only property.
    */
-  get rendermime(): RenderMime<Widget> {
+  get rendermime(): RenderMime {
     return this._rendermime;
   }
 
@@ -447,7 +447,7 @@ class OutputAreaWidget extends Widget {
   private _fixedHeight = false;
   private _collapsed = false;
   private _model: OutputAreaModel = null;
-  private _rendermime: RenderMime<Widget> = null;
+  private _rendermime: RenderMime = null;
   private _renderer: OutputAreaWidget.IRenderer = null;
 }
 
@@ -465,7 +465,7 @@ namespace OutputAreaWidget {
     /**
      * The rendermime instance used by the widget.
      */
-    rendermime: RenderMime<Widget>;
+    rendermime: RenderMime;
 
     /**
      * The output widget renderer.
@@ -882,7 +882,7 @@ class OutputWidget extends Widget {
     }
   }
 
-  private _rendermime: RenderMime<Widget> = null;
+  private _rendermime: RenderMime = null;
   private _placeholder: Widget = null;
 }
 
@@ -983,7 +983,7 @@ namespace OutputWidget {
     /**
      * The rendermime instance used by the widget.
      */
-    rendermime: RenderMime<Widget>;
+    rendermime: RenderMime;
   }
 }
 

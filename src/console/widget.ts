@@ -348,8 +348,10 @@ class ConsoleWidget extends Widget {
       }
 
       let bundle = value.data as MimeMap<string>;
-      inspectorUpdate.content = this._rendermime.render(bundle);
-      this.inspected.emit(inspectorUpdate);
+      this._rendermime.render(bundle, true).then(content => {
+        inspectorUpdate.content = content;
+        this.inspected.emit(inspectorUpdate);
+      });
     });
   }
 
@@ -433,8 +435,10 @@ class ConsoleWidget extends Widget {
     let details = content.payload.filter(i => (i as any).source === 'page')[0];
     if (details) {
       let bundle = (details as any).data as MimeMap<string>;
-      inspectorUpdate.content = this._rendermime.render(bundle);
-      this.inspected.emit(inspectorUpdate);
+      this._rendermime.render(bundle, true).then(content => {
+        inspectorUpdate.content = content;
+        this.inspected.emit(inspectorUpdate);
+      });
       return;
     }
 
@@ -444,7 +448,7 @@ class ConsoleWidget extends Widget {
   private _completion: CompletionWidget = null;
   private _completionHandler: CellCompletionHandler = null;
   private _mimetype = 'text/x-ipython';
-  private _rendermime: RenderMime<Widget> = null;
+  private _rendermime: RenderMime = null;
   private _renderer: ConsoleWidget.IRenderer = null;
   private _history: IConsoleHistory = null;
   private _session: ISession = null;
@@ -469,7 +473,7 @@ namespace ConsoleWidget {
     /**
      * The mime renderer for the console widget.
      */
-    rendermime: RenderMime<Widget>;
+    rendermime: RenderMime;
 
     /**
      * The renderer for a console widget.
@@ -495,7 +499,7 @@ namespace ConsoleWidget {
     /**
      * Create a new prompt widget.
      */
-    createPrompt(rendermime: RenderMime<Widget>): CodeCellWidget;
+    createPrompt(rendermime: RenderMime): CodeCellWidget;
   }
 
 
@@ -533,7 +537,7 @@ namespace ConsoleWidget {
     /**
      * Create a new prompt widget.
      */
-    createPrompt(rendermime: RenderMime<Widget>): CodeCellWidget {
+    createPrompt(rendermime: RenderMime): CodeCellWidget {
       let widget = new CodeCellWidget({ rendermime });
       widget.model = new CodeCellModel();
       return widget;

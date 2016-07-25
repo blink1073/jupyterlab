@@ -161,7 +161,7 @@ class NotebookPanel extends Widget {
    * #### Notes
    * This is a read-only property.
    */
-  get rendermime(): RenderMime<Widget> {
+  get rendermime(): RenderMime {
     return this._rendermime;
   }
 
@@ -346,7 +346,7 @@ class NotebookPanel extends Widget {
     }
   }
 
-  private _rendermime: RenderMime<Widget> = null;
+  private _rendermime: RenderMime = null;
   private _context: IDocumentContext<INotebookModel> = null;
   private _clipboard: IClipboard = null;
   private _content: Notebook = null;
@@ -368,7 +368,7 @@ export namespace NotebookPanel {
     /**
      * The rendermime instance used by the panel.
      */
-    rendermime: RenderMime<Widget>;
+    rendermime: RenderMime;
 
     /**
      * The application clipboard.
