@@ -18,7 +18,7 @@ import {
 } from '../docmanager';
 
 import {
-  DocumentRegistry
+  DocumentRegistry, IDocumentContext
 } from '../docregistry';
 
 import {
@@ -26,7 +26,7 @@ import {
 } from 'phosphide/lib/core/application';
 
 import {
-  Menu, MenuItem, IMenuItemOptions, MenuItemType
+  Menu, MenuItem
 } from 'phosphor-menus';
 
 import {
@@ -46,7 +46,7 @@ import {
 } from '../widgettracker';
 
 import {
-  MainMenu, mainMenuProvider
+  MainMenu
 } from '../mainmenu/plugin';
 
 
@@ -125,6 +125,7 @@ function activateFileBrowser(app: Application, manager: ServiceManager, registry
   tracker.activeWidgetChanged.connect((sender, widget) => {
     activeWidget = widget;
   });
+  let docManager: DocumentManager;
 
   let opener: IWidgetOpener = {
     open: (widget) => {
@@ -134,11 +135,16 @@ function activateFileBrowser(app: Application, manager: ServiceManager, registry
       if (!widget.isAttached) {
         app.shell.addToMainArea(widget);
         tracker.addWidget(widget);
+        widget.node.addEventListener('contextmenu', (event: MouseEvent) => {
+          let context = docManager.contextForWidget(widget);
+          let menu = createDocumentMenu(context);
+          menu.popup(event.clientX, event.clientY);
+        });
       }
     }
   };
 
-  let docManager = new DocumentManager({
+  docManager = new DocumentManager({
     registry,
     manager,
     opener
@@ -174,7 +180,7 @@ function activateFileBrowser(app: Application, manager: ServiceManager, registry
         }));
       }
     }
-    let menu = createMenu(fbWidget, items);
+    let menu = createFileMenu(fbWidget, items);
     menu.popup(x, y);
   });
 
@@ -416,7 +422,7 @@ function activateFileBrowser(app: Application, manager: ServiceManager, registry
 /**
  * Create a context menu for the file browser listing.
  */
-function createMenu(fbWidget: FileBrowserWidget, openWith: MenuItem[]):  Menu {
+function createFileMenu(fbWidget: FileBrowserWidget, openWith: MenuItem[]):  Menu {
   let items = [
     new MenuItem({
       text: '&Open',
@@ -478,6 +484,33 @@ function createMenu(fbWidget: FileBrowserWidget, openWith: MenuItem[]):  Menu {
       handler: () => { fbWidget.shutdownKernels(); }
     })
   );
+  return new Menu(items);
+}
+
+
+/**
+ * Create a context menu for a document widget.
+ */
+function createDocumentMenu(context: IDocumentContext): Menu {
+  let items = [
+    new MenuItem({
+      text: '&Save',
+      icon: 'fa fa-save',
+      handler: () => { context.save(); }
+    }),
+    new MenuItem({
+      text: 'Save &As',
+      handler: () => { };
+    }),
+    new MenuItem({
+      text: '&Revert',
+      handler: () => { context.revert(); }
+    }),
+    new MenuItem({
+      text: 'Change &Kernel',
+      handler:
+    })
+  ];
   return new Menu(items);
 }
 
