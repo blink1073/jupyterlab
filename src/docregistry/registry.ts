@@ -2,7 +2,7 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  IKernel, Contents, Kernel, Session
+  Contents, Kernel, Session
 } from '@jupyterlab/services';
 
 import {
@@ -581,7 +581,7 @@ namespace DocumentRegistry {
     /**
      * A signal emitted when the kernel changes.
      */
-    kernelChanged: ISignal<this, IKernel>;
+    kernelChanged: ISignal<this, Kernel.IKernel>;
 
     /**
      * A signal emitted when the path changes.
@@ -611,7 +611,7 @@ namespace DocumentRegistry {
     /**
      * The current kernel associated with the document.
      */
-    readonly kernel: IKernel;
+    readonly kernel: Kernel.IKernel;
 
     /**
      * The current path associated with the document.
@@ -643,7 +643,7 @@ namespace DocumentRegistry {
      * #### Notes
      * If no options are given, the session is shut down.
      */
-    changeKernel(options?: Kernel.IModel): Promise<IKernel>;
+    changeKernel(options?: Kernel.IModel): Promise<Kernel.IKernel>;
 
     /**
      * Save the document contents to disk.
