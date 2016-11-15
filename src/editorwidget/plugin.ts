@@ -37,14 +37,14 @@ import {
   IEditorTracker
 } from './index';
 
-import {
-  DEFAULT_CODEMIRROR_THEME
-} from '../codemirror/widget';
-
 import 'codemirror/addon/edit/matchbrackets.js';
 import 'codemirror/addon/edit/closebrackets.js';
 import 'codemirror/addon/comment/comment.js';
 import 'codemirror/keymap/vim.js';
+
+import {
+  IEditorFactory
+} from '../codeeditor';
 
 
 /**
@@ -83,7 +83,7 @@ const tracker = new InstanceTracker<EditorWidget>();
 export
 const editorHandlerProvider: JupyterLabPlugin<IEditorTracker> = {
   id: 'jupyter.services.editor-handler',
-  requires: [IDocumentRegistry, IMainMenu, ICommandPalette],
+  requires: [IDocumentRegistry, IMainMenu, ICommandPalette, IEditorFactory],
   provides: IEditorTracker,
   activate: activateEditorHandler,
   autoStart: true
@@ -93,12 +93,13 @@ const editorHandlerProvider: JupyterLabPlugin<IEditorTracker> = {
 /**
  * Sets up the editor widget
  */
-function activateEditorHandler(app: JupyterLab, registry: IDocumentRegistry, mainMenu: IMainMenu, palette: ICommandPalette): IEditorTracker {
-  let widgetFactory = new EditorWidgetFactory({
-    name: 'Editor',
-    fileExtensions: ['*'],
-    defaultFor: ['*']
-  });
+function activateEditorHandler(app: JupyterLab, registry: IDocumentRegistry, mainMenu: IMainMenu, palette: ICommandPalette, editorFactory: IEditorFactory): IEditorTracker {
+  let widgetFactory = new EditorWidgetFactory(editorFactory,
+    {
+      name: 'Editor',
+      fileExtensions: ['*'],
+      defaultFor: ['*']
+    });
 
   // Sync tracker with currently focused widget.
   app.shell.currentChanged.connect((sender, args) => {
@@ -169,12 +170,9 @@ function activateEditorHandler(app: JupyterLab, registry: IDocumentRegistry, mai
         return;
       }
       // Get the selected code from the editor.
-      let doc = widget.editor.getDoc();
-      let code = doc.getSelection();
-      if (!code) {
-        let { line } = doc.getCursor();
-        code = doc.getLine(line);
-      }
+      let editorModel = widget.editor.model;
+      let selection = editorModel.selections.front;
+      let code = editorModel.value.substring(selection.start, selection.end);
       commands.execute('console:inject', { id, code });
     },
     label: 'Run Code',
@@ -206,7 +204,8 @@ const sessionIdProperty = new AttachedProperty<EditorWidget, string>({ name: 'se
 function toggleLineNums() {
   if (tracker.currentWidget) {
     let editor = tracker.currentWidget.editor;
-    editor.setOption('lineNumbers', !editor.getOption('lineNumbers'));
+    // TODO move to codemirror
+    // editor.setOption('lineNumbers', !editor.getOption('lineNumbers'));
   }
 }
 
@@ -217,7 +216,8 @@ function toggleLineNums() {
 function toggleLineWrap() {
   if (tracker.currentWidget) {
     let editor = tracker.currentWidget.editor;
-    editor.setOption('lineWrapping', !editor.getOption('lineWrapping'));
+    // TODO move to codemirror
+    // editor.setOption('lineWrapping', !editor.getOption('lineWrapping'));
   }
 }
 
@@ -228,7 +228,8 @@ function toggleLineWrap() {
 function toggleMatchBrackets() {
   if (tracker.currentWidget) {
     let editor = tracker.currentWidget.editor;
-    editor.setOption('matchBrackets', !editor.getOption('matchBrackets'));
+    // TODO move to codemirror
+    // editor.setOption('matchBrackets', !editor.getOption('matchBrackets'));
   }
 }
 
@@ -238,9 +239,10 @@ function toggleMatchBrackets() {
  */
 function toggleVim() {
   tracker.forEach(widget => {
-    let keymap = widget.editor.getOption('keyMap') === 'vim' ? 'default'
-      : 'vim';
-    widget.editor.setOption('keyMap', keymap);
+    // TODO move to codemirror
+    // let keymap = widget.editor.getOption('keyMap') === 'vim' ? 'default'
+    //   : 'vim';
+    // widget.editor.setOption('keyMap', keymap);
   });
 }
 
@@ -271,15 +273,16 @@ function createMenu(app: JupyterLab): Menu {
   settings.addItem({ command: cmdIds.matchBrackets });
   settings.addItem({ command: cmdIds.vimMode });
 
-  commands.addCommand(cmdIds.changeTheme, {
-    label: args => {
-      return args['theme'] as string;
-    },
-    execute: args => {
-      let name: string = args['theme'] as string || DEFAULT_CODEMIRROR_THEME;
-      tracker.forEach(widget => { widget.editor.setOption('theme', name); });
-    }
-  });
+  // TODO move to codemirror
+  // commands.addCommand(cmdIds.changeTheme, {
+  //   label: args => {
+  //     return args['theme'] as string;
+  //   },
+  //   execute: args => {
+  //     let name: string = args['theme'] as string || DEFAULT_CODEMIRROR_THEME;
+  //     tracker.forEach(widget => { widget.editor.setOption('theme', name); });
+  //   }
+  // });
 
   [
    'jupyter', 'default', 'abcdef', 'base16-dark', 'base16-light',
