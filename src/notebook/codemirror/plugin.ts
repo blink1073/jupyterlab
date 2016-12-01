@@ -2,23 +2,53 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  NotebookPanel
-} from '../notebook/panel';
+  NotebookPanel, Notebook
+} from '../notebook';
 
 import {
-  CodeMirrorNotebookPanelRenderer
-} from './notebook/panel';
+  CodeCellWidget
+} from '../cells';
 
 import {
-  JupyterLabPlugin
+  JupyterLab, JupyterLabPlugin
 } from '../../application';
+
+import {
+  IEditorServices
+} from '../../codeeditor';
 
 /**
  * The provider for a notebook's code mirror renderer.
  */
 export
 const rendererProvider: JupyterLabPlugin<NotebookPanel.IRenderer> = {
-  id: 'jupyter.services.notebook.codemirror.renderer',
-  provides: NotebookPanel.IRenderer,
-  activate: () => CodeMirrorNotebookPanelRenderer.defaultRenderer
-};
+    id: 'jupyter.services.notebook.codemirror.renderer',
+    requires: [IEditorServices],
+    provides: NotebookPanel.IRenderer,
+    activate: activateRendererProvider
+  };
+
+/**
+ * Activates the renderer provider extension.
+ */
+function activateRendererProvider(app: JupyterLab, editorServices: IEditorServices): NotebookPanel.IRenderer {
+  const codeCellRenderer = new CodeCellWidget.Renderer({
+    editorFactory: host => editorServices.factory.newInlineEditor(host.node, {
+      matchBrackets: true,
+      autoCloseBrackets: true
+    })
+  });
+  const rawCellRenderer = new CodeCellWidget.Renderer({
+    editorFactory: host => editorServices.factory.newInlineEditor(host.node, {
+      wordWrap: true
+    })
+  });
+  const markdownCellRenderer = rawCellRenderer;
+  const editorMimeTypeService = editorServices.mimeTypeService;
+  const notebookRenderer = new Notebook.Renderer({
+    codeCellRenderer, markdownCellRenderer, rawCellRenderer, editorMimeTypeService
+  });
+  return new NotebookPanel.Renderer({
+    notebookRenderer
+  });
+}
