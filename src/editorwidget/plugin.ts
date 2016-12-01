@@ -41,14 +41,15 @@ import {
   CodeMirrorEditor, DEFAULT_CODEMIRROR_THEME
 } from '../codemirror/editor';
 
+import {
+  IEditorServices
+} from '../codeeditor';
+
+import 'codemirror/mode/meta';
 import 'codemirror/addon/edit/matchbrackets.js';
 import 'codemirror/addon/edit/closebrackets.js';
 import 'codemirror/addon/comment/comment.js';
 import 'codemirror/keymap/vim.js';
-
-import {
-  IEditorServices
-} from '../codeeditor';
 
 
 /**
