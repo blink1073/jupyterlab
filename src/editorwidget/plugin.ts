@@ -47,7 +47,7 @@ import 'codemirror/addon/comment/comment.js';
 import 'codemirror/keymap/vim.js';
 
 import {
-  IEditorFactory
+  IEditorServices
 } from '../codeeditor';
 
 
@@ -87,7 +87,7 @@ const tracker = new InstanceTracker<EditorWidget>();
 export
 const editorHandlerProvider: JupyterLabPlugin<IEditorTracker> = {
   id: 'jupyter.services.editor-handler',
-  requires: [IDocumentRegistry, IMainMenu, ICommandPalette, IEditorFactory],
+  requires: [IDocumentRegistry, IMainMenu, ICommandPalette, IEditorServices],
   provides: IEditorTracker,
   activate: activateEditorHandler,
   autoStart: true
@@ -97,8 +97,8 @@ const editorHandlerProvider: JupyterLabPlugin<IEditorTracker> = {
 /**
  * Sets up the editor widget
  */
-function activateEditorHandler(app: JupyterLab, registry: IDocumentRegistry, mainMenu: IMainMenu, palette: ICommandPalette, editorFactory: IEditorFactory): IEditorTracker {
-  let widgetFactory = new EditorWidgetFactory(editorFactory,
+function activateEditorHandler(app: JupyterLab, registry: IDocumentRegistry, mainMenu: IMainMenu, palette: ICommandPalette, editorServices: IEditorServices): IEditorTracker {
+  let widgetFactory = new EditorWidgetFactory(editorServices,
     {
       name: 'Editor',
       fileExtensions: ['*'],
