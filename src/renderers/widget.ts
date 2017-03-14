@@ -275,14 +275,14 @@ class RenderedImage extends Widget {
     let img = document.createElement('img');
     let source = Private.getSource(options);
     img.src = `data:${options.mimeType};base64,${source}`;
-    let metadata = options.model.metadata.get(options.mimeType);
+    let metadata = options.model.metadata.get(options.mimeType) as JSONObject;
     if (metadata) {
       let w = metadata['width'];
       let h = metadata['height'];
-      if (typeof h === "number") {
+      if (typeof h === 'number') {
         img.height = h;
       }
-      if (typeof w === "number") {
+      if (typeof w === 'number') {
         img.width = w;
       }
     }
