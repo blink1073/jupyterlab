@@ -87,7 +87,8 @@ class CompletionHandler implements IDisposable {
     // Update the editor and signal connections.
     editor = this._editor = newValue;
     if (editor) {
-      let model = editor.model;
+      const model = editor.model;
+      this._enabled = false;
       model.selections.changed.connect(this.onSelectionsChanged, this);
       model.value.changed.connect(this.onTextChanged, this);
       // On initial load, manually check the cursor position.
@@ -282,12 +283,19 @@ class CompletionHandler implements IDisposable {
     const position = editor.getCursorPosition();
     const line = editor.getLine(position.line);
 
+    // If the entire line is white space, return.
     if (line.match(/^\W*$/)) {
       this._enabled = false;
       model.reset(true);
       host.classList.remove(COMPLETER_ENABLED_CLASS);
       return;
     }
+
+    // If the completer is already enabled, return;
+    if (this._enabled) {
+      return;
+    }
+
     this._enabled = true;
     host.classList.add(COMPLETER_ENABLED_CLASS);
   }
