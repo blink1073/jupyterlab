@@ -170,7 +170,7 @@ class CompletionHandler implements IDisposable {
     if (!editor) {
       return Promise.reject(new Error('No active editor'));
     }
-    
+
     const code = editor.model.value.text;
     const offset = Text.jsIndexToCharIndex(editor.getOffsetAt(position), code);
     let content: KernelMessage.ICompleteRequest = {
@@ -261,7 +261,7 @@ class CompletionHandler implements IDisposable {
     model.setOptions(value.matches || []);
 
     // Update the cursor.
-    const text = this._editor.model.value.text;
+    const text = state.text;
     model.cursor = {
       start: Text.charIndexToJsIndex(value.cursor_start, text),
       end: Text.charIndexToJsIndex(value.cursor_end, text),
