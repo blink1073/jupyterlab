@@ -10,6 +10,10 @@ import {
 } from '@phosphor/coreutils';
 
 import {
+  Action, DataStore
+} from '@phosphor/datastore';
+
+import {
   Widget
 } from '@phosphor/widgets';
 
@@ -56,7 +60,7 @@ interface IRenderMime {
    * Renders the model using the preferred mime type.  See
    * [[preferredMimeType]].
    */
-  render(model: IRenderMime.IMimeModel): IRenderMime.IReadyWidget;
+  render(id: string, store: IRenderMime.RenderMimeStore): IRenderMime.IReadyWidget;
 
   /**
    * Find the preferred mimeType for a model.
@@ -67,7 +71,7 @@ interface IRenderMime {
    * The mimeTypes in the model are checked in preference order
    * until a renderer returns `true` for `.canRender`.
    */
-  preferredMimeType(model: IRenderMime.IMimeModel): string;
+  preferredMimeType(id: string, store: IRenderMime.RenderMimeStore): string;
 
   /**
    * Clone the rendermime instance with shallow copies of data.
@@ -132,58 +136,39 @@ namespace IRenderMime {
     renderer: IRenderer;
   }
 
-
   /**
-   * A bundle for mime data.
+   *
    */
   export
-  interface IBundle {
+  interface IByIdMap<T> {
     /**
-     * Get a value for a given key.
      *
-     * @param key - the key.
-     *
-     * @returns the value for that key.
      */
-    get(key: string): JSONValue;
+    readonly [id: number]: T;
+  }
+
+  /**
+   *
+   */
+  export
+  interface ITable<T> {
+    /**
+     *
+     */
+    readonly maxId: number;
 
     /**
-     * Set a key-value pair in the bundle.
      *
-     * @param key - The key to set.
-     *
-     * @param value - The value for the key.
-     *
-     * @returns the old value for the key, or undefined
-     *   if that did not exist.
      */
-    set(key: string, value: JSONValue): JSONValue;
+    readonly byId: IByIdMap<T>;
+  }
 
-    /**
-     * Check whether the bundle has a key.
-     *
-     * @param key - the key to check.
-     *
-     * @returns `true` if the bundle has the key, `false` otherwise.
-     */
-    has(key: string): boolean;
-
-    /**
-     * Get a list of the keys in the bundle.
-     *
-     * @returns - a list of keys.
-     */
-    keys(): string[];
-
-    /**
-     * Remove a key from the bundle.
-     *
-     * @param key - the key to remove.
-     *
-     * @returns the value of the given key,
-     *   or undefined if that does not exist.
-     */
-    delete(key: string): JSONValue;
+  /**
+   * A read-only bundle of data for a mime model.
+   */
+  export
+  interface IMimeBundle {
+    readonly [key: string]: JSONValue;
   }
 
   /**
@@ -197,15 +182,68 @@ namespace IRenderMime {
     readonly trusted: boolean;
 
     /**
-     * The data associated with the model.
+     * The data bundle id associated with the model.
      */
-    readonly data: IBundle;
+    readonly dataId: number;
 
     /**
-     * The metadata associated with the model.
+     * The metadata bundle id associated with the model.
      */
-    readonly metadata: IBundle;
+    readonly metadataId: number;
   }
+
+  /**
+   * The store state for a mime model.
+   */
+  export
+  interface IMimeStoreState {
+    /**
+     * The mime models table.
+     */
+    readonly mimeModels: ITable<IMimeModel>;
+
+    /**
+     * The mime models table.
+     */
+    readonly mimeBundles: ITable<IMimeBundle>;
+  }
+
+  /**
+   * Options used to create a mime model.
+   */
+  export
+  interface IMimeModelOptions {
+    /**
+     * Whether the model is trusted.
+     */
+    trusted?: boolean;
+
+    /**
+     * The data associated with the model.
+     */
+    data: IMimeBundle;
+
+    /**
+     * The metadata bundle id associated with the model.
+     */
+    metadata?: IMimeBundle;
+  }
+
+  /**
+   * An action associated with a rendermime model store.
+   */
+  export
+  type RenderMimeAction = (
+    CreateMimeModel |
+    AddToMimeBundle |
+    RemoveFromMimeBundle
+  );
+
+  /**
+   * A store for rendermime models.
+   */
+  export
+  type RenderMimeStore = DataStore<IMimeStoreState, RenderMimeAction>;
 
   /**
    * The options used to initialize a document widget factory.
@@ -373,9 +411,14 @@ namespace IRenderMime {
     mimeType: string;
 
     /**
-     * The mime data model.
+     * The mime data model id.
      */
-    model: IMimeModel;
+    modelId: number;
+
+    /**
+     * The mime model data store.
+     */
+    dataStore: RenderMimeStore;
 
     /**
      * The html sanitizer.
@@ -430,4 +473,113 @@ namespace IRenderMime {
      */
     getDownloadUrl(path: string): Promise<string>;
   }
+}
+
+
+/**
+ * An action for creating a mime model.
+ */
+export
+class CreateMimeModel extends Action<'@jupyterlab/rendermime-interfaces/CREATE_MIME_MODEL'> {
+  /**
+   * Construct a new CreateMimeModel object.
+   */
+  constructor(id: number, model: IRenderMime.IMimeModel) {
+    super('@jupyterlab/rendermime-interfaces/CREATE_MIME_MODEL');
+    this.id = id;
+    this.model = model;
+  }
+
+  /**
+   * The id of the mime model.
+   */
+  readonly id: number;
+
+  /**
+   * The model to add.
+   */
+  readonly model: IRenderMime.IMimeModel;
+}
+
+
+/**
+ * An action for creating a mime bundle.
+ */
+export
+class CreateMimeBundle extends Action<'@jupyterlab/rendermime-interfaces/CREATE_MIME_MODEL'> {
+  /**
+   * Construct a new CreateMimeBundle object.
+   */
+  constructor(id: number, bundle: IRenderMime.IMimeBundle) {
+    super('@jupyterlab/rendermime-interfaces/CREATE_MIME_MODEL');
+    this.id = id;
+    this.bundle = bundle;
+  }
+
+  /**
+   * The id of the mime bundle.
+   */
+  readonly id: number;
+
+  /**
+   * The model to add.
+   */
+  readonly bundle: IRenderMime.IMimeBundle;
+}
+
+
+/**
+ * An action for adding or updating a key to a mime bundle.
+ */
+export
+class AddToMimeBundle extends Action<'@jupyterlab/rendermime-interfaces/ADD_TO_MIME_BUNDLE'> {
+  /**
+   * Construct a new AddToMimeBundle object.
+   */
+  constructor(id: number, key: string, value: JSONValue) {
+    super('@jupyterlab/rendermime-interfaces/ADD_TO_MIME_BUNDLE');
+    this.id = id;
+    this.key = key;
+  }
+
+  /**
+   * The id of the mime bundle.
+   */
+  readonly id: number;
+
+  /**
+   * The key to add or update.
+   */
+  readonly key: string;
+
+  /**
+   * The value of the key.
+   */
+  readonly value: JSONValue;
+}
+
+
+/**
+ * An action for removing a key from a mime bundle.
+ */
+export
+class RemoveFromMimeBundle extends Action<'@jupyterlab/rendermime-interfaces/REMOVE_FROM_MIME_BUNDLE'> {
+  /**
+   * Construct a new RemoveFromMimeBundle object.
+   */
+  constructor(id: number, key: string) {
+    super('@jupyterlab/rendermime-interfaces/REMOVE_FROM_MIME_BUNDLE');
+    this.id = id;
+    this.key = key;
+  }
+
+  /**
+   * The id of the mime bundle.
+   */
+  readonly id: number;
+
+  /**
+   * The key to remove.
+   */
+  readonly key: string;
 }

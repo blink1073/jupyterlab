@@ -8,7 +8,7 @@ import {
 import {
   RenderedHTML, RenderedMarkdown, RenderedText, RenderedImage,
   RenderedJavaScript, RenderedSVG, RenderedPDF, RenderedLatex
-} from '.';
+} from './widgets';
 
 
 /**
@@ -39,7 +39,9 @@ class HTMLRenderer implements IRenderMime.IRenderer {
    * Whether the renderer will sanitize the data given the render options.
    */
   wouldSanitize(options: IRenderMime.IRenderOptions): boolean {
-    return !options.model.trusted;
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
+    return !model.trusted;
   }
 }
 
@@ -125,8 +127,10 @@ class JavaScriptRenderer implements IRenderMime.IRenderer {
    * Whether the renderer can render given the render options.
    */
   canRender(options: IRenderMime.IRenderOptions): boolean {
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
     return (
-      options.model.trusted &&
+      model.trusted &&
       this.mimeTypes.indexOf(options.mimeType) !== -1
     );
   }
@@ -161,8 +165,10 @@ class SVGRenderer implements IRenderMime.IRenderer {
    * Whether the renderer can render given the render options.
    */
   canRender(options: IRenderMime.IRenderOptions): boolean {
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
     return (
-      options.model.trusted &&
+      model.trusted &&
       this.mimeTypes.indexOf(options.mimeType) !== -1
     );
   }
@@ -197,8 +203,10 @@ class PDFRenderer implements IRenderMime.IRenderer {
    * Whether the renderer can render given the render options.
    */
   canRender(options: IRenderMime.IRenderOptions): boolean {
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
     return (
-      options.model.trusted &&
+      model.trusted &&
       this.mimeTypes.indexOf(options.mimeType) !== -1
     );
   }
@@ -280,6 +288,8 @@ class MarkdownRenderer implements IRenderMime.IRenderer {
    * Whether the renderer will sanitize the data given the render options.
    */
   wouldSanitize(options: IRenderMime.IRenderOptions): boolean {
-    return !options.model.trusted;
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
+    return !model.trusted;
   }
 }

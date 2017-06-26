@@ -120,7 +120,9 @@ class RenderedHTML extends RenderedHTMLCommon {
     super(options);
     this.addClass(HTML_CLASS);
     let source = Private.getSource(options);
-    if (!options.model.trusted) {
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
+    if (!model.trusted) {
       source = options.sanitizer.sanitize(source);
     }
     Private.appendHtml(this.node, source);
@@ -168,6 +170,9 @@ class RenderedMarkdown extends RenderedHTMLCommon {
     // Initialize the marked library if necessary.
     Private.initializeMarked();
 
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
+
     let source = Private.getSource(options);
     let parts = removeMath(source);
     // Add the markdown content asynchronously.
@@ -177,7 +182,8 @@ class RenderedMarkdown extends RenderedHTMLCommon {
         return;
       }
       content = replaceMath(content, parts['math']);
-      if (!options.model.trusted) {
+
+      if (!model.trusted) {
         content = options.sanitizer.sanitize(content);
       }
       Private.appendHtml(this.node, content);
@@ -258,9 +264,11 @@ class RenderedImage extends Widget {
     let img = document.createElement('img');
     let source = Private.getSource(options);
     img.src = `data:${options.mimeType};base64,${source}`;
-    let metadata = options.model.metadata.get(options.mimeType) as JSONObject;
-    if (metadata) {
-      let metaJSON = metadata as JSONObject;
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
+    let metadata = state.mimeBundles.byId[model.metadataId];
+    if (metadata[options.mimeType]) {
+      let metaJSON = metadata[options.mimeType] as JSONObject;
       if (typeof metaJSON['height'] === 'number') {
         img.height = metaJSON['height'] as number;
       }
@@ -423,7 +431,10 @@ namespace Private {
    */
   export
   function getSource(options: IRenderMime.IRenderOptions): string {
-    return String(options.model.data.get(options.mimeType));
+    let state = options.dataStore.state;
+    let model = state.mimeModels.byId[options.modelId];
+    let data = state.mimeBundles.byId[model.dataId];
+    return String(data[options.mimeType]);
   }
 
   /**

@@ -57,6 +57,7 @@ class RenderMime implements IRenderMime {
     this.sanitizer = options.sanitizer || defaultSanitizer;
     this._resolver = options.resolver || null;
     this._handler = options.linkHandler || null;
+    this._store = options.dataStore || RenderMime.defaultDataStore;
   }
 
   /**
@@ -144,6 +145,18 @@ class RenderMime implements IRenderMime {
   }
 
   /**
+   * Create a mime model given mime model options.
+   *
+   * @param options - the options used to create the mime model.
+   *
+   * @returns A mime model using the internal data store of the
+   *  rendermime instance.
+   */
+  createMimeModel(options: IRenderMime.IMimeModelOptions): IRenderMime.IMimeModel {
+    // TODO.
+  }
+
+  /**
    * Clone the rendermime instance with shallow copies of data.
    *
    * #### Notes
@@ -156,7 +169,8 @@ class RenderMime implements IRenderMime {
     return new RenderMime({
       items,
       sanitizer: this.sanitizer,
-      linkHandler: this._handler
+      linkHandler: this._handler,
+      dataStore: this._store
     });
   }
 
@@ -228,6 +242,7 @@ class RenderMime implements IRenderMime {
   private _order: string[] = [];
   private _resolver: IRenderMime.IResolver | null;
   private _handler: IRenderMime.ILinkHandler | null;
+  private _store: IRenderMime.RenderMimeStore;
 }
 
 
@@ -264,6 +279,11 @@ namespace RenderMime {
      * An optional path handler.
      */
     linkHandler?: IRenderMime.ILinkHandler;
+
+    /**
+     * The internal data store used by the rendermime instance.
+     */
+    dataStore?: IRenderMime.RenderMimeStore;
   }
 
   /**
@@ -363,6 +383,12 @@ namespace RenderMime {
      */
     contents: Contents.IManager;
   }
+
+  /**
+   * The default data store used by rendermime instances.
+   */
+  export
+  const defaultDataStore = new RenderMimeStore();
 }
 
 
