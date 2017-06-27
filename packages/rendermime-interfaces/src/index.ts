@@ -60,7 +60,7 @@ interface IRenderMime {
    * Renders the model using the preferred mime type.  See
    * [[preferredMimeType]].
    */
-  render(id: string, store: IRenderMime.RenderMimeStore): IRenderMime.IReadyWidget;
+  render(id: number, store: IRenderMime.RenderMimeStore): IRenderMime.IReadyWidget;
 
   /**
    * Find the preferred mimeType for a model.
@@ -71,7 +71,7 @@ interface IRenderMime {
    * The mimeTypes in the model are checked in preference order
    * until a renderer returns `true` for `.canRender`.
    */
-  preferredMimeType(id: string, store: IRenderMime.RenderMimeStore): string;
+  preferredMimeType(id: number, store: IRenderMime.RenderMimeStore): string;
 
   /**
    * Clone the rendermime instance with shallow copies of data.
@@ -235,6 +235,7 @@ namespace IRenderMime {
   export
   type RenderMimeAction = (
     CreateMimeModel |
+    CreateMimeBundle |
     AddToMimeBundle |
     RemoveFromMimeBundle
   );
@@ -243,7 +244,7 @@ namespace IRenderMime {
    * A store for rendermime models.
    */
   export
-  type RenderMimeStore = DataStore<IMimeStoreState, RenderMimeAction>;
+  type RenderMimeStore = DataStore<IMimeStoreState>;
 
   /**
    * The options used to initialize a document widget factory.
@@ -506,12 +507,12 @@ class CreateMimeModel extends Action<'@jupyterlab/rendermime-interfaces/CREATE_M
  * An action for creating a mime bundle.
  */
 export
-class CreateMimeBundle extends Action<'@jupyterlab/rendermime-interfaces/CREATE_MIME_MODEL'> {
+class CreateMimeBundle extends Action<'@jupyterlab/rendermime-interfaces/CREATE_MIME_BUNDLE'> {
   /**
    * Construct a new CreateMimeBundle object.
    */
   constructor(id: number, bundle: IRenderMime.IMimeBundle) {
-    super('@jupyterlab/rendermime-interfaces/CREATE_MIME_MODEL');
+    super('@jupyterlab/rendermime-interfaces/CREATE_MIME_BUNDLE');
     this.id = id;
     this.bundle = bundle;
   }

@@ -10,6 +10,10 @@ import {
 } from '@phosphor/algorithm';
 
 import {
+  DataStore
+} from '@phosphor/datastore';
+
+import {
   IRenderMime
 } from '@jupyterlab/rendermime-interfaces';
 
@@ -22,13 +26,13 @@ import {
 } from '@jupyterlab/apputils';
 
 import {
-  MimeModel
-} from './mimemodel';
-
-import {
   HTMLRenderer, LatexRenderer, ImageRenderer, TextRenderer,
   JavaScriptRenderer, SVGRenderer, MarkdownRenderer, PDFRenderer
 } from './renderers';
+
+import {
+  mimeReducer
+} from './reducers';
 
 import {
   RenderedText
@@ -100,14 +104,15 @@ class RenderMime implements IRenderMime {
    * Renders the model using the preferred mime type.  See
    * [[preferredMimeType]].
    */
-  render(model: IRenderMime.IMimeModel): IRenderMime.IReadyWidget {
-    let mimeType = this.preferredMimeType(model);
+  render(id: number, store: IRenderMime.RenderMimeStore): IRenderMime.IReadyWidget {
+    let mimeType = this.preferredMimeType(id, store);
     if (!mimeType) {
-      return this._handleError(model);
+      return this._handleError(id, store);
     }
     let rendererOptions = {
       mimeType,
-      model,
+      modelId: id,
+      dataStore: store,
       resolver: this._resolver,
       sanitizer: this.sanitizer,
       linkHandler: this._handler
@@ -124,11 +129,13 @@ class RenderMime implements IRenderMime {
    * The mimeTypes in the model are checked in preference order
    * until a renderer returns `true` for `.canRender`.
    */
-  preferredMimeType(model: IRenderMime.IMimeModel): string {
+  preferredMimeType(id: number, store: IRenderMime.RenderMimeStore): string {
     let sanitizer = this.sanitizer;
+    let model = store.state.mimeModels.byId[id];
+    let data = store.state.mimeBundles.byId[model.dataId];
     return find(this._order, mimeType => {
-      if (model.data.has(mimeType)) {
-        let options = { mimeType, model, sanitizer };
+      if (data[mimeType]) {
+        let options = { mimeType, modelId: id, dataStore: store, sanitizer };
         let renderer = this._renderers[mimeType];
         let canRender = false;
         try {
@@ -149,10 +156,9 @@ class RenderMime implements IRenderMime {
    *
    * @param options - the options used to create the mime model.
    *
-   * @returns A mime model using the internal data store of the
-   *  rendermime instance.
+   * @returns The id of the created mime model.
    */
-  createMimeModel(options: IRenderMime.IMimeModelOptions): IRenderMime.IMimeModel {
+  createMimeModel(options: IRenderMime.IMimeModelOptions): number {
     // TODO.
   }
 
@@ -222,15 +228,16 @@ class RenderMime implements IRenderMime {
   /**
    * Return a widget for an error.
    */
-  private _handleError(model: IRenderMime.IMimeModel): IRenderMime.IReadyWidget {
-   let errModel = new MimeModel({
+  private _handleError(id: number, store: IRenderMime.RenderMimeStore): IRenderMime.IReadyWidget {
+   let errModel = this.createMimeModel({
       data: {
         'application/vnd.jupyter.stderr': 'Unable to render data'
       }
    });
    let options = {
       mimeType: 'application/vnd.jupyter.stderr',
-      model: errModel,
+      modelId: errModel,
+      dataStore: this._store,
       sanitizer: this.sanitizer,
     };
    return new RenderedText(options);
@@ -388,7 +395,16 @@ namespace RenderMime {
    * The default data store used by rendermime instances.
    */
   export
-  const defaultDataStore = new RenderMimeStore();
+  const defaultDataStore = new DataStore<IRenderMime.IMimeStoreState>(mimeReducer, {
+    mimeModels: {
+      maxId: 0,
+      byId: {}
+    },
+    mimeBundles: {
+      maxId: 0,
+      byId: {}
+    }
+  });
 }
 
 
