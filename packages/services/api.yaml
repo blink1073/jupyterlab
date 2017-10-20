@@ -1,0 +1,44 @@
+swagger: '2.0'
+info:
+  title: JupyterLab API
+  description: JupyterLab API
+  version: "1"
+  contact:
+    name: JupyterLab Project
+    url: http://jupyterlab.readthedocs.io/en/latest/
+# will be prefixed to all paths
+basePath: /lab/api
+produces:
+  - application/json
+consumes:
+  - application/json
+parameters:
+  plugin_id:
+    name: plugin_id
+    required: true
+    in: path
+    description: plugin id
+    type: string
+paths:
+  /settings/{plugin_id}:
+    parameters:
+      - $ref: '#/parameters/plugin_id'
+    get:
+      summary: Get the settings for a given plugin id
+      description: "Get a settings object for a given plugin id"
+      responses:
+        404:
+          description: No item found
+        200:
+          description: The settings for a given plugin id
+          schema:
+            $ref: '#/definitions/Settings'
+definitions:
+  Settings:
+    description: A settings object
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        $ref: '#/parameters/plugin_id'
