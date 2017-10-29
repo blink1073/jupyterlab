@@ -66,7 +66,7 @@ class ConsolePanel extends Panel {
     let loadFile = true;
     if (!path) {
       let count = Private.count++;
-      path = `${basePath || ''}/.console-${count}-${uuid()}`;
+      path = `${basePath || ''}/console-${count}-${uuid()}`;
       loadFile = false;
       this.id = `console-${count}`;
       name = `Console ${count}`;
