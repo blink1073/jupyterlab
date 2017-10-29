@@ -26,7 +26,7 @@ import {
 } from '@jupyterlab/launcher';
 
 import {
-  find
+  find, each
 } from '@phosphor/algorithm';
 
 import {
@@ -74,6 +74,9 @@ namespace CommandIDs {
 
   export
   const changeKernel = 'console:change-kernel';
+
+  export
+  const exportNotebook = 'console:export-notebook';
 }
 
 
@@ -155,6 +158,17 @@ function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommand
     return createConsole({ basePath: cwd, kernelPreference: { name } });
   };
 
+  // Update console count to reflect number of running consoles.
+  manager.ready.then(() => {
+    let count = 1;
+    each(manager.sessions.running(), model => {
+      if (model.type === 'console') {
+        count += 1;
+      }
+    });
+    ConsolePanel.setConsoleCount(count);
+  });
+
   // Add a launcher item if the launcher is available.
   if (launcher) {
     manager.ready.then(() => {
@@ -230,6 +244,11 @@ function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommand
             return item.path === path;
           });
           if (model) {
+            // The name in args is not the name of the console,
+            // which is what ConsolePanel expects.
+            if (!args.name || !args.name.length) {
+              args.name = model.name;
+            }
             return createConsole(args);
           }
           return Promise.reject(`No running console for path: ${path}`);
@@ -402,6 +421,31 @@ function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommand
   });
   palette.addItem({ command, category });
 
+  command = CommandIDs.exportNotebook;
+  commands.addCommand(command, {
+    label: 'Export to Notebook',
+    execute: args => {
+      const current = getCurrent(args);
+      if (!current) {
+        return;
+      }
+      let dir = current.session.path.substring(0, current.session.path.lastIndexOf('/'));
+      return current.console.manager.contents.newUntitled({type: 'notebook', path: dir}).then(data => {
+        if (!data) {
+          return;
+        }
+        return current.console.save(data.path).then(() => {
+          return commands.execute('docmanager:open', {
+            path: data.path, factory: 'Notebook',
+            kernel: { name }
+          });
+        });
+      });
+    },
+    isEnabled: hasWidget
+  });
+  palette.addItem({ command, category });
+
   menu.addItem({ command: CommandIDs.run });
   menu.addItem({ command: CommandIDs.runForced });
   menu.addItem({ command: CommandIDs.linebreak });
@@ -413,6 +457,8 @@ function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommand
   menu.addItem({ command: CommandIDs.changeKernel });
   menu.addItem({ type: 'separator' });
   menu.addItem({ command: CommandIDs.closeAndShutdown });
+  menu.addItem({ type: 'separator' });
+  menu.addItem({ command: CommandIDs.exportNotebook });
 
   mainMenu.addMenu(menu, {rank: 50});
 

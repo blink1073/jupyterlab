@@ -24,6 +24,10 @@ import {
 } from '@jupyterlab/cells';
 
 import {
+  ServiceManager
+} from '@jupyterlab/services';
+
+import {
   createClientSession
 } from '../utils';
 
@@ -61,6 +65,11 @@ class TestConsole extends CodeConsole {
   }
 }
 
+let manager = new ServiceManager();
+
+before(() => {
+  return manager.ready;
+});
 
 const contentFactory = createConsoleFactory();
 
@@ -68,13 +77,18 @@ const contentFactory = createConsoleFactory();
 describe('console/widget', () => {
 
   describe('CodeConsole', () => {
+    let manager: ServiceManager.IManager;
+    before(() => {
+      manager = new ServiceManager();
+      return manager.ready;
+    });
 
     let widget: TestConsole;
 
     beforeEach(() => {
       return createClientSession().then(session => {
         widget = new TestConsole({
-          contentFactory, rendermime, session, mimeTypeService
+          contentFactory, rendermime, session, manager, mimeTypeService
         });
       });
     });

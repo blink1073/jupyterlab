@@ -160,7 +160,8 @@ describe('console/panel', () => {
             contentFactory: contentFactory,
             rendermime,
             mimeTypeService,
-            session: panel.session
+            session: panel.session,
+            manager
           };
           expect(contentFactory.createConsole(options)).to.be.a(CodeConsole);
         });

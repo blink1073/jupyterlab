@@ -63,15 +63,24 @@ class ConsolePanel extends Panel {
     let contentFactory = this.contentFactory = (
       options.contentFactory || ConsolePanel.defaultContentFactory
     );
-    let count = Private.count++;
+    let loadFile = true;
     if (!path) {
-      path = `${basePath || ''}/console-${count}-${uuid()}`;
+      let count = Private.count++;
+      path = `${basePath || ''}/.console-${count}-${uuid()}`;
+      loadFile = false;
+      this.id = `console-${count}`;
+      name = `Console ${count}`;
+    } else {
+      // When loading running console we must use the original id, otherwise gui events are all wrong.
+      this.id = `console-${name.substring(name.lastIndexOf(' ') + 1)}`;
     }
+
+    this.title.label = name;
 
     let session = this._session = new ClientSession({
       manager: manager.sessions,
       path,
-      name: name || `Console ${count}`,
+      name: name,
       type: 'console',
       kernelPreference: options.kernelPreference
     });
@@ -83,14 +92,9 @@ class ConsolePanel extends Panel {
     rendermime = rendermime.clone({ resolver });
 
     this.console = contentFactory.createConsole({
-      rendermime, session, mimeTypeService, contentFactory, modelFactory
+      rendermime, session, manager, mimeTypeService, contentFactory, modelFactory
     });
     this.addWidget(this.console);
-
-    session.ready.then(() => {
-      this._connected = new Date();
-      this._updateTitle();
-    });
 
     this._manager = manager;
     this.console.executed.connect(this._onExecuted, this);
@@ -99,7 +103,19 @@ class ConsolePanel extends Panel {
 
     this.title.icon = CONSOLE_ICON_CLASS;
     this.title.closable = true;
-    this.id = `console-${count}`;
+
+    if (loadFile) {
+      // We're now ready to load the console document.
+      this.console.fromStore();
+    } else {
+      // In case of new console we want an empty file saved.
+      this.console.save();
+    }
+
+    session.ready.then(() => {
+      this._connected = new Date();
+      this._updateTitle();
+    });
   }
 
   /**
@@ -283,6 +299,15 @@ namespace ConsolePanel {
   export
   const IContentFactory = new Token<IContentFactory>('@jupyterlab/console:IContentFactory');
   /* tslint:enable */
+
+  /**
+   * Set consoles count. This is useful when restoring the app.
+   * @param count Number of consoles already running.
+   */
+  export
+  function setConsoleCount(count: number) {
+    Private.count = count;
+  }
 }
 
 
@@ -302,8 +327,11 @@ namespace Private {
   export
   function updateTitle(panel: ConsolePanel, connected: Date | null, executed: Date | null) {
     let session = panel.console.session;
+    // Since this function is often called when `session.name` is empty,
+    // we want to make sure we still show a title.
+    let newName = session.name || panel.title.label;
     let caption = (
-      `Name: ${session.name}\n` +
+      `Name: ${newName}\n` +
       `Directory: ${PathExt.dirname(session.path)}\n` +
       `Kernel: ${session.kernelDisplayName}`
     );
@@ -313,7 +341,7 @@ namespace Private {
     if (executed) {
       caption += `\nLast Execution: ${Time.format(executed.toISOString())}`;
     }
-    panel.title.label = session.name;
+    panel.title.label = newName;
     panel.title.caption = caption;
   }
 }
