@@ -43,6 +43,7 @@
     "typescript": "~2.4.1"
   },
   "jupyterlab": {
-    "extension": true
+    "extension": true,
+    "schemaDir": "schema"
   }
 }

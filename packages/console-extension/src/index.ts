@@ -14,11 +14,11 @@ import {
 } from '@jupyterlab/codeeditor';
 
 import {
-  ConsolePanel, IConsoleTracker
+  ConsolePanel, IConsoleTracker, CodeConsole
 } from '@jupyterlab/console';
 
 import {
-  PageConfig
+  PageConfig, ISettingRegistry
 } from '@jupyterlab/coreutils';
 
 import {
@@ -91,6 +91,7 @@ const tracker: JupyterLabPlugin<IConsoleTracker> = {
     ICommandPalette,
     ConsolePanel.IContentFactory,
     IEditorServices,
+    ISettingRegistry,
     ILayoutRestorer
   ],
   optional: [ILauncher],
@@ -125,7 +126,8 @@ export default plugins;
 /**
  * Activate the console extension.
  */
-function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommandPalette, contentFactory: ConsolePanel.IContentFactory,  editorServices: IEditorServices, restorer: ILayoutRestorer, launcher: ILauncher | null): IConsoleTracker {
+function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommandPalette, contentFactory: ConsolePanel.IContentFactory,  editorServices: IEditorServices, settingRegistry: ISettingRegistry, restorer: ILayoutRestorer, launcher: ILauncher | null): IConsoleTracker {
+  const id = plugins[1].id;
   let manager = app.serviceManager;
   let { commands, shell } = app;
   let category = 'Console';
@@ -134,6 +136,10 @@ function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommand
 
   // Create an instance tracker for all console panels.
   const tracker = new InstanceTracker<ConsolePanel>({ namespace: 'console' });
+
+  let {
+    fileBacking
+  } = CodeConsole.defaultConfig;
 
   // Handle state restoration.
   restorer.restore(tracker, {
@@ -144,6 +150,25 @@ function activateConsole(app: JupyterLab, mainMenu: IMainMenu, palette: ICommand
     }),
     name: panel => panel.console.session.path,
     when: manager.ready
+  });
+
+  /**
+   * Update the setting values.
+   */
+  function updateSettings(settings: ISettingRegistry.ISettings): void {
+    let cached = settings.get('fileBacking').composite as boolean | null;
+    fileBacking = cached === null ? fileBacking : !!cached;
+    CodeConsole.setOption('fileBacking', fileBacking);
+  }
+
+  // Fetch the initial state of the settings.
+  Promise.all([settingRegistry.load(id), shell]).then(([settings]) => {
+    updateSettings(settings);
+    settings.changed.connect(() => {
+      updateSettings(settings);
+    });
+  }).catch((reason: Error) => {
+    console.error(reason.message);
   });
 
   // Update the command registry when the console state changes.

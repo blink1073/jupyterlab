@@ -1,0 +1,12 @@
+{
+    "jupyter.lab.setting-icon-class": "jp-CodeConsoleIcon",
+    "jupyter.lab.setting-icon-label": "Console",
+    "title": "Console",
+    "description": "Console settings for all consoles.",
+    "properties": {
+      "fileBacking": {
+          "type": "boolean", "title": "Back consoles by files", "default": false
+      }
+    },
+    "type": "object"
+  }
