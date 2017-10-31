@@ -12,5 +12,7 @@ include setupbase.py
 include jupyterlab/package.app.json
 include jupyterlab/*.js
 include jupyterlab/.npmrc
+include jupyterlab/yarn.app.lock
+include jupyterlab/yarn.lock
 
 prune jupyterlab/tests

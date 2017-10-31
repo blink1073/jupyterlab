@@ -90,6 +90,7 @@ def find_package_data():
 
     return {
         'jupyterlab': ['build/*', '*.js', 'package.app.json', '.npmrc',
+                       'yarn.lock', 'yarn.app.lock',
                        ] + theme_dirs + schema_dirs
     }
 

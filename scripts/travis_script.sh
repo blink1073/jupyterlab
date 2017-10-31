@@ -14,9 +14,9 @@ if [[ $GROUP == tests ]]; then
 
     # Run the JS and python tests
     py.test
-    npm run build:test
-    npm test
-    npm run test:services || npm run test:services
+    jlpm run build:test
+    jlpm test
+    jlpm run test:services || jlpm run test:services
 
 fi
 
@@ -25,9 +25,9 @@ if [[ $GROUP == coverage ]]; then
 
     # Run the coverage and python tests.
     py.test
-    npm run build:test
-    npm run coverage
-    npm run clean
+    jlpm run build:test
+    jlpm run coverage
+    jlpm run clean
 
 fi
 
@@ -40,7 +40,7 @@ if [[ $GROUP == other ]]; then
 
     # Make sure we can run the built app.
     jupyter lab build
-    python -m jupyterlab.selenium_check 
+    python -m jupyterlab.selenium_check
     jupyter labextension list
 
     # Make sure we can non-dev install.
@@ -69,30 +69,30 @@ if [[ $GROUP == other ]]; then
     jupyter labextension uninstall @jupyterlab/notebook-extension --no-build
 
     # Make sure we can call help on all the cli apps.
-    jupyter lab -h 
-    jupyter lab build -h 
+    jupyter lab -h
+    jupyter lab build -h
     jupyter lab clean -h
-    jupyter lab path -h 
+    jupyter lab path -h
     jupyter labextension link -h
     jupyter labextension unlink -h
-    jupyter labextension install -h 
-    jupyter labextension uninstall -h 
+    jupyter labextension install -h
+    jupyter labextension uninstall -h
     jupyter labextension list -h
     jupyter labextension enable -h
     jupyter labextension disable -h
 
     # Run the package integrity check
-    npm run integrity
+    jlpm run integrity
 
     # Make sure the examples build
-    npm run build:examples
+    jlpm run build:examples
 
     # Run the link check - allow for a link to fail once
     pip install -q pytest-check-links
-    py.test --check-links -k .md . || py.test --check-links -k .md . 
+    py.test --check-links -k .md . || py.test --check-links -k .md .
 
     # Build the api docs
-    npm run docs
+    jlpm run docs
     cp jupyter_plugins.png docs
 
     # Verify tutorial docs build
@@ -108,8 +108,8 @@ if [[ $GROUP == other ]]; then
     postcss packages/**/style/*.css --dir /tmp
 
     # Make sure we can make release assets
-    npm run build:static
+    jlpm run build:static
     if [ ! -f ./build/release_data.json ]; then
-        echo "npm publish in jupyterlab unsucessful!"
+        echo "jlpm publish in jupyterlab unsucessful!"
     fi
 fi

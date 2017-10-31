@@ -34,6 +34,6 @@ for (var j = 0; j < files.length; j++) {
 
 console.log('** Package not yet included!');
 
-var cmd = 'npm view ' + name + ' version';
+var cmd = 'jlpm view ' + name + ' version';
 var specifier = childProcess.execSync(cmd);
 console.log('~' + String(specifier).trim());

@@ -10,5 +10,6 @@
     "packages/services/examples/typescript-browser-with-output",
     "test"
   ],
-  "version": "independent"
+  "version": "independent",
+  "npmClient": "jlpm"
 }

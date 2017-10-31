@@ -75,7 +75,7 @@ index = index + 'import "' + package.name + '";\n';
 fs.writeFileSync(indexPath, index);
 
 // Update the core jupyterlab build dependencies.
-childProcess.execSync('npm run update:core', {stdio:[0,1,2]});
+childProcess.execSync('jlpm run update:core', {stdio:[0,1,2]});
 
 // Update the lerna symlinks.
-childProcess.execSync('npm install', {stdio:[0,1,2]});
+childProcess.execSync('jlpm install --ignore-optional', {stdio:[0,1,2]});

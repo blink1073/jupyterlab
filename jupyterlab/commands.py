@@ -157,7 +157,8 @@ def install_extension_async(extension, app_dir=None, logger=None, abort_callback
     if (os.path.exists(extension) and
             os.path.isdir(extension) and
             not os.path.exists(pjoin(extension, 'node_modules'))):
-        yield run([get_npm_name(), 'install'], cwd=extension, logger=logger,
+        yield run([get_npm_name(), 'install', '--ignore-optional', '--prefer-offline'],
+                  cwd=extension, logger=logger,
                   abort_callback=abort_callback)
 
     _ensure_app_dirs(app_dir, logger)
@@ -168,7 +169,7 @@ def install_extension_async(extension, app_dir=None, logger=None, abort_callback
     os.makedirs(target)
 
     # npm pack the extension
-    yield run([get_npm_name(), 'pack', extension], cwd=target, logger=logger,
+    yield run([get_npm_name(force_npm=True), 'pack', extension], cwd=target, logger=logger,
               abort_callback=abort_callback)
 
     fnames = glob.glob(pjoin(target, '*.*'))
@@ -314,10 +315,13 @@ def disable_extension(extension, app_dir=None, logger=None):
     _toggle_extension(extension, True, app_dir, logger)
 
 
-def get_npm_name():
+def get_npm_name(force_npm=False):
     """Get the appropriate npm executable name.
     """
-    return 'npm.cmd' if os.name == 'nt' else 'npm'
+    if force_npm:
+        return 'npm.cmd' if os.name == 'nt' else 'npm'
+
+    return 'jlpm'
 
 
 @gen.coroutine
@@ -604,7 +608,8 @@ def build_async(app_dir=None, name=None, version=None, logger=None, abort_callba
     npm = get_npm_name()
 
     # Make sure packages are installed.
-    yield run([npm, 'install'], cwd=staging, logger=logger, abort_callback=abort_callback)
+    yield run([npm, 'install', '--ignore-optional', '--prefer-offline'],
+              cwd=staging, logger=logger, abort_callback=abort_callback)
 
     # Build the app.
     yield run([npm, 'run', 'clean'], cwd=staging, logger=logger, abort_callback= abort_callback)
@@ -636,7 +641,8 @@ def _install_linked_package(staging, name, path, logger, abort_callback=None):
     os.makedirs(target)
 
     # npm pack the extension
-    yield run([get_npm_name(), 'pack', path], cwd=target, logger=logger, abort_callback=abort_callback)
+    yield run([get_npm_name(force_npm=True), 'pack', path],
+              cwd=target, logger=logger, abort_callback=abort_callback)
 
     fname = os.path.basename(glob.glob(pjoin(target, '*.*'))[0])
     data = _read_package(pjoin(target, fname))
@@ -837,7 +843,7 @@ def _ensure_package(app_dir, logger=None, name=None, version=None):
             shutil.rmtree(staging)
             os.makedirs(staging)
 
-    for fname in ['index.app.js', 'webpack.config.js', '.npmrc']:
+    for fname in ['index.app.js', 'webpack.config.js', '.npmrc', 'yarn.app.lock']:
         dest = pjoin(staging, fname.replace('.app', ''))
         shutil.copy(pjoin(here, fname), dest)
 

@@ -34,16 +34,16 @@ function run(cmd, options) {
 
 // Perform the patch operations.
 console.log('Patching', target, '...');
-run('npm run build:packages');
-run('npm version patch', { cwd: packagePath });
-run('npm publish', { cwd: packagePath});
+run('jlpm run build:packages');
+run('jlpm version patch', { cwd: packagePath });
+run('jlpm publish', { cwd: packagePath});
 
 // Extract the new package info.
 var data = require(path.join(packagePath, 'package.json'));
 var name = data.name;
 var version = data.version;
 
-run('npm run update:dependency ' + name + ' ^' + version);
+run('jlpm run update:dependency ' + name + ' ^' + version);
 run('git commit -a -m "Release ' + name + '@' + version + '"');
 run('git tag ' + name + '@' + version);
 

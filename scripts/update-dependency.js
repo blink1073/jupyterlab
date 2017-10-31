@@ -17,7 +17,7 @@ var specifier = process.argv[3];
 
 // Translate @latest to a concrete version.
 if (specifier === '@latest') {
-  var cmd = 'npm view ' + target + ' version';
+  var cmd = 'jlpm view ' + target + ' version';
   var specifier = childProcess.execSync(cmd);
   specifier = '~' + String(specifier).trim();
 }

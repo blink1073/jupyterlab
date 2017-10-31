@@ -32,3 +32,5 @@ examples/app/themes
 examples/app/schemas
 
 lerna-debug.log
+
+jupyterlab/yarn-*.js
