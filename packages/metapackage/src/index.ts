@@ -29,6 +29,7 @@ import "@jupyterlab/imageviewer";
 import "@jupyterlab/imageviewer-extension";
 import "@jupyterlab/inspector";
 import "@jupyterlab/inspector-extension";
+import "@jupyter-widgets/jupyterlab-manager";
 import "@jupyterlab/launcher";
 import "@jupyterlab/launcher-extension";
 import "@jupyterlab/markdownviewer-extension";

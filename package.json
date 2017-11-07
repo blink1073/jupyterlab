@@ -40,6 +40,7 @@
   "dependencies": {},
   "devDependencies": {
     "lerna": "^2.4.0",
-    "npm-run-all": "~4.1.1"
+    "npm-run-all": "~4.1.1",
+    "webpack-bundle-analyzer": "^2.9.0"
   }
 }

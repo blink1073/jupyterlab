@@ -5,6 +5,8 @@ var Handlebars = require('handlebars');
 var crypto = require('crypto');
 var package_data = require('./package.json');
 var Build = require('@jupyterlab/buildutils').Build;
+var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
 
 // Ensure a clear build directory.
 var buildDir = './build';
@@ -128,5 +130,6 @@ module.exports = {
     fs: 'empty'
   },
   bail: true,
-  devtool: 'cheap-source-map'
+  devtool: 'cheap-source-map',
+  plugins: [new BundleAnalyzerPlugin()]
 }

@@ -9,6 +9,7 @@
     "watch": "webpack --watch"
   },
   "dependencies": {
+    "@jupyter-widgets/jupyterlab-manager": "^0.29.2",
     "@jupyterlab/application": "^0.11.1",
     "@jupyterlab/application-extension": "^0.11.1",
     "@jupyterlab/apputils": "^0.11.1",
@@ -93,6 +94,7 @@
       "@jupyterlab/help-extension": "",
       "@jupyterlab/imageviewer-extension": "",
       "@jupyterlab/inspector-extension": "",
+      "@jupyter-widgets/jupyterlab-manager": "",
       "@jupyterlab/launcher-extension": "",
       "@jupyterlab/markdownviewer-extension": "",
       "@jupyterlab/notebook-extension": "",
@@ -160,6 +162,7 @@
       "@jupyterlab/imageviewer-extension": "../packages/imageviewer-extension",
       "@jupyterlab/inspector": "../packages/inspector",
       "@jupyterlab/inspector-extension": "../packages/inspector-extension",
+      "@jupyter-widgets/jupyterlab-manager": "../packages/jupyterlab-manager",
       "@jupyterlab/launcher": "../packages/launcher",
       "@jupyterlab/launcher-extension": "../packages/launcher-extension",
       "@jupyterlab/markdownviewer-extension": "../packages/markdownviewer-extension",

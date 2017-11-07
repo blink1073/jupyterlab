@@ -18,6 +18,9 @@
     "paths": {
       "@jupyterlab/*": [
         "../*/src"
+      ],
+      "@jupyter-widgets/jupyterlab-manager": [
+        "../jupyterlab-manager/src"
       ]
     },
     "jsx": "react",
