@@ -6,6 +6,7 @@ from __future__ import print_function, absolute_import
 import atexit
 from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -16,16 +17,13 @@ from tornado.ioloop import IOLoop
 from traitlets import Bool, Unicode
 
 
-def create_notebook_dir():
-    """Create a temporary directory"""
-    root_dir = tempfile.mkdtemp(prefix='mock_contents')
-    atexit.register(lambda: shutil.rmtree(root_dir, True))
-    return root_dir
+root_dir = tempfile.mkdtemp(prefix='mock_contents')
+atexit.register(lambda: shutil.rmtree(root_dir, True))
 
 
 def run(nbapp):
     """Run the example"""
-    node_command = ['node', 'index.js', '--jupyter-config-data=./config.json']
+    cmd = ['node', 'index.js', '--jupyter-config-data=./config.json']
     config = dict(baseUrl=nbapp.base_url)
     if nbapp.token:
         config['token'] = nbapp.token
@@ -34,25 +32,25 @@ def run(nbapp):
         json.dump(config, fid)
 
     print('*' * 60)
-    print(' '.join(node_command))
-    return subprocess.call(node_command)
+    print(' '.join(cmd))
+    shell = os.name == 'nt'
+    return subprocess.check_output(cmd, shell=shell)
 
 
 class TestApp(NotebookApp):
     """A notebook app that runs a node example."""
 
     open_browser = Bool(False)
-    notebook_dir = Unicode(create_notebook_dir())
+    notebook_dir = Unicode(root_dir)
 
     def start(self):
         pool = ThreadPoolExecutor(max_workers=1)
         future = pool.submit(run, self)
-        ioloop = IOLoop.current()
-        ioloop.add_future(future, self.stop)
+        IOLoop.current().add_future(future, self._on_run_end)
         super(TestApp, self).start()
 
-    def stop(self, future):
-        NotebookApp.stop(self)
+    def _on_run_end(self, future):
+        self.stop()
         sys.exit(future.result())
 
 

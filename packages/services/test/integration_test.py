@@ -7,7 +7,7 @@ import atexit
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
-from subprocess import call
+import subprocess
 import sys
 import shutil
 import tempfile
@@ -51,8 +51,8 @@ def run(nbapp):
     with open('build/config.json', 'w') as fid:
         json.dump(config, fid)
 
-        shell = os.name == 'nt'
-    return call(cmd, shell=shell)
+    shell = os.name == 'nt'
+    return subprocess.check_output(cmd, shell=shell)
 
 
 class TestApp(NotebookApp):
@@ -64,12 +64,11 @@ class TestApp(NotebookApp):
     def start(self):
         pool = ThreadPoolExecutor(max_workers=1)
         future = pool.submit(run, self)
-        ioloop = IOLoop.current()
-        ioloop.add_future(future, self.stop)
+        IOLoop.current().add_future(future, self._on_run_end)
         super(TestApp, self).start()
 
-    def stop(self, future):
-        NotebookApp.stop(self)
+    def _on_run_end(self, future):
+        self.stop()
         sys.exit(future.result())
 
 
