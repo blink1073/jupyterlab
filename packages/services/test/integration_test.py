@@ -3,17 +3,15 @@
 
 from __future__ import print_function, absolute_import
 
-from __future__ import print_function, absolute_import
-
 import atexit
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
-from subprocess import Popen
+from subprocess import call
 import sys
 import shutil
 import tempfile
 
-from tornado import gen
 from tornado.ioloop import IOLoop
 from notebook.notebookapp import NotebookApp
 from traitlets import Bool, Unicode
@@ -33,17 +31,17 @@ def create_notebook_dir():
     return root_dir
 
 
-def get_command(nbapp):
-    """Get the command to run"""
+def run(nbapp):
+    """Run the integration test"""
     terminalsAvailable = nbapp.web_app.settings['terminals_available']
-    # Compatibility with Notebook 4.2.
     token = getattr(nbapp, 'token', '')
-    cmd = ['mocha', '--timeout', '200000',
+    mocha = os.path.join(HERE, '..', 'node_modules', '.bin', '_mocha')
+    cmd = ['node', mocha, '--timeout', '200000',
            '--retries', '2',
            'build/integration.js',
            '--jupyter-config-data=./build/config.json']
     if DEBUG:
-        cmd = ['devtool', '../node_modules/.bin/_mocha', '-qc'] + cmd[1:]
+        cmd = ['devtool', mocha, '-qc'] + cmd[1:]
 
     config = dict(baseUrl=nbapp.connection_url,
                   terminalsAvailable=str(terminalsAvailable))
@@ -53,33 +51,8 @@ def get_command(nbapp):
     with open('build/config.json', 'w') as fid:
         json.dump(config, fid)
 
-    return cmd
-
-
-@gen.coroutine
-def run(cmd):
-    """Run the cmd and exit with the return code"""
-    yield gen.moment  # sync up with the ioloop
-
-    shell = os.name == 'nt'
-    proc = Popen(cmd, shell=shell)
-    print('\n\nRunning command: "%s"\n\n' % ' '.join(cmd))
-
-    # Poll the process once per second until finished.
-    while 1:
-        yield gen.sleep(1)
-        if proc.poll() is not None:
-            break
-
-    exit(proc.returncode)
-
-
-@gen.coroutine
-def exit(code):
-    """Safely stop the app and then exit with the given code."""
-    yield gen.moment   # sync up with the ioloop
-    IOLoop.current().stop()
-    sys.exit(code)
+        shell = os.name == 'nt'
+    return call(cmd, shell=shell)
 
 
 class TestApp(NotebookApp):
@@ -88,28 +61,17 @@ class TestApp(NotebookApp):
     open_browser = Bool(False)
     notebook_dir = Unicode(create_notebook_dir())
 
+    def start(self):
+        pool = ThreadPoolExecutor(max_workers=1)
+        future = pool.submit(run, self)
+        ioloop = IOLoop.current()
+        ioloop.add_future(future, self.stop)
+        super(TestApp, self).start()
 
-def main():
-    """Run the unit test."""
-    app = TestApp()
-
-    if app.version == '4.3.0':
-        msg = ('Cannot run unit tests against Notebook 4.3.0.  '
-               'Please upgrade to Notebook 4.3.1+')
-        print(msg)
-        sys.exit(1)
-
-    app.initialize([])  # reserve sys.argv for the command
-    cmd = get_command(app)
-    run(cmd)
-
-    try:
-        app.start()
-    except KeyboardInterrupt:
-        exit(1)
+    def stop(self, future):
+        NotebookApp.stop(self)
+        sys.exit(future.result())
 
 
 if __name__ == '__main__':
-    main()
-
-
+    TestApp.launch_instance()
