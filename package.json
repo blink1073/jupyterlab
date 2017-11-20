@@ -14,7 +14,7 @@
     "clean": "node buildutils/lib/clean-packages.js examples packages",
     "clean:examples": "node buildutils/lib/clean-packages.js examples",
     "clean:main": "cd jupyterlab && jlpm run clean",
-    "clean:slate": "git clean -dfx && git checkout . && pip install -e . && jlpm install",
+    "clean:slate": "git clean -dfx && git checkout . && pip install -e .",
     "clean:src": "node buildutils/lib/clean-packages.js packages",
     "clean:tests": "lerna run clean --scope \"@jupyterlab/test-*\"",
     "coverage": "lerna run coverage --stream",

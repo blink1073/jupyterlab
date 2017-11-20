@@ -73,8 +73,7 @@ steps:
 ```bash
 git clone https://github.com/<your-github-username>/jupyterlab.git
 cd jupyterlab
-pip install -e .
-jlpm install
+pip install -v -e .  # Install the python package and set up node_modules
 jlpm run build  # Build the dev mode assets
 jupyter lab build  # Build the app dir assets
 jupyter serverextension enable --py jupyterlab
@@ -170,8 +169,7 @@ npm install --save jupyterlab
 ```bash
 git clone https://github.com/jupyterlab/jupyterlab.git
 cd jupyterlab
-pip install -e .
-jlpm install
+pip install -v -e .  # Install the python package and set up node_modules
 jlpm run build:packages
 ```
 

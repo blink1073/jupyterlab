@@ -46,6 +46,7 @@ from setuptools.command.sdist import sdist
 from setuptools import setup
 from setuptools.command.bdist_egg import bdist_egg
 from setuptools import setup
+from setuptools.command.develop import develop
 
 
 # Our own imports
@@ -67,6 +68,21 @@ pjoin = os.path.join
 
 DESCRIPTION = 'An alpha preview of the JupyterLab notebook server extension.'
 LONG_DESCRIPTION = 'This is an alpha preview of JupyterLab. It is not ready for general usage yet. Development happens on https://github.com/jupyter/jupyterlab, with chat on https://gitter.im/jupyter/jupyterlab.'
+
+
+class PostDevelopCommand(develop):
+    """Post-installation for development mode."""
+
+    def run(self):
+        """Run the installation, then run jlpm to set up repo.
+        """
+        import subprocess
+        develop.run(self)
+        log.info('Running jlpm...')
+        proc = subprocess.Popen('jlpm', cwd=here, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        while proc.poll() is None:
+            log.info(proc.stdout.readline().decode('utf-8'))
 
 
 setup_args = dict(
@@ -107,7 +123,8 @@ cmdclass = dict(
     sdist  = js_prerelease(sdist, strict=True),
     bdist_egg = bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
     jsdeps = CheckAssets,
-    egg_info = custom_egg_info
+    egg_info = custom_egg_info,
+    develop = PostDevelopCommand
 )
 try:
     from wheel.bdist_wheel import bdist_wheel
