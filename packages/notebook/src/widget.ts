@@ -1003,9 +1003,14 @@ class Notebook extends StaticNotebook {
       break;
     case 'mouseup':
       this._evtMouseup(event as MouseEvent);
+      if (event.target === document) {
+        this._evtDocumentMouseup(event as MouseEvent);
+      }
       break;
     case 'mousemove':
-      this._evtMousemove(event as MouseEvent);
+      if (event.target === document) {
+        this._evtDocumentMousemove(event as MouseEvent);
+      }
       break;
     case 'keydown':
       this._ensureFocus(true);
@@ -1043,6 +1048,7 @@ class Notebook extends StaticNotebook {
     super.onAfterAttach(msg);
     let node = this.node;
     node.addEventListener('mousedown', this);
+    node.addEventListener('mouseup', this);
     node.addEventListener('keydown', this);
     node.addEventListener('dblclick', this);
     node.addEventListener('focus', this, true);
@@ -1059,6 +1065,7 @@ class Notebook extends StaticNotebook {
   protected onBeforeDetach(msg: Message): void {
     let node = this.node;
     node.removeEventListener('mousedown', this);
+    node.removeEventListener('mouseup', this);
     node.removeEventListener('keydown', this);
     node.removeEventListener('dblclick', this);
     node.removeEventListener('focus', this, true);
@@ -1247,15 +1254,11 @@ class Notebook extends StaticNotebook {
       }
       if (event.shiftKey) {
         shouldDrag = false;
-        this._extendSelectionTo(i);
+        this.extendContiguousSelectionTo(i);
 
         // Prevent text select behavior.
         event.preventDefault();
         event.stopPropagation();
-      } else {
-        if (!this.isSelected(widget)) {
-          this.deselectAll();
-        }
       }
       // Set the cell as the active one.
       // This must be done *after* setting the mode above.
@@ -1273,11 +1276,19 @@ class Notebook extends StaticNotebook {
     }
   }
 
-
   /**
    * Handle the `'mouseup'` event for the widget.
    */
   private _evtMouseup(event: MouseEvent): void {
+    if (!this._drag) {
+      this.deselectAll();
+    }
+  }
+
+  /**
+   * Handle the `'mouseup'` event for the drag.
+   */
+  private _evtDocumentMouseup(event: MouseEvent): void {
     if (event.button !== 0 || !this._drag) {
       document.removeEventListener('mousemove', this, true);
       document.removeEventListener('mouseup', this, true);
@@ -1290,7 +1301,7 @@ class Notebook extends StaticNotebook {
   /**
    * Handle the `'mousemove'` event for the widget.
    */
-  private _evtMousemove(event: MouseEvent): void {
+  private _evtDocumentMousemove(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
 
