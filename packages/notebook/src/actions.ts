@@ -146,7 +146,7 @@ namespace NotebookActions {
 
     // Get the cells to merge.
     each(widget.widgets, (child, i) => {
-      if (widget.isSelected(child)) {
+      if (widget.isSelectedOrActive(child)) {
         toMerge.push(child.model.value.text);
         if (i !== index) {
           toDelete.push(child.model);
@@ -281,8 +281,8 @@ namespace NotebookActions {
     let widgets = widget.widgets;
     cells.beginCompoundOperation();
     for (let i = cells.length - 2; i > -1; i--) {
-      if (widget.isSelected(widgets[i])) {
-        if (!widget.isSelected(widgets[i + 1])) {
+      if (widget.isSelectedOrActive(widgets[i])) {
+        if (!widget.isSelectedOrActive(widgets[i + 1])) {
           cells.move(i, i + 1);
           if (widget.activeCellIndex === i) {
             widget.activeCellIndex++;
@@ -311,8 +311,8 @@ namespace NotebookActions {
     let widgets = widget.widgets;
     cells.beginCompoundOperation();
     for (let i = 1; i < cells.length; i++) {
-      if (widget.isSelected(widgets[i])) {
-        if (!widget.isSelected(widgets[i - 1])) {
+      if (widget.isSelectedOrActive(widgets[i])) {
+        if (!widget.isSelectedOrActive(widgets[i - 1])) {
           cells.move(i, i - 1);
           if (widget.activeCellIndex === i) {
             widget.activeCellIndex--;
@@ -760,7 +760,7 @@ namespace NotebookActions {
         const toDelete: number[] = [];
         each(widget.widgets, (child, i) => {
           let deletable = child.model.metadata.get('deletable');
-          if (widget.isSelected(child) && deletable !== false) {
+          if (widget.isSelectedOrActive(child) && deletable !== false) {
             toDelete.push(i);
           }
         });
@@ -889,7 +889,7 @@ namespace NotebookActions {
     let i = 0;
     each(cells, (cell: ICodeCellModel) => {
       let child = widget.widgets[i];
-      if (widget.isSelected(child) && cell.type === 'code') {
+      if (widget.isSelectedOrActive(child) && cell.type === 'code') {
         cell.outputs.clear();
         (child as CodeCell).outputHidden = false;
         cell.executionCount = null;
@@ -939,7 +939,7 @@ namespace NotebookActions {
     let state = Private.getState(widget);
     let cells = widget.widgets;
     each(cells, (cell: Cell) => {
-      if (widget.isSelected(cell) && cell.model.type === 'code') {
+      if (widget.isSelectedOrActive(cell) && cell.model.type === 'code') {
         cell.inputHidden = true;
       }
     });
@@ -959,7 +959,7 @@ namespace NotebookActions {
     let state = Private.getState(widget);
     let cells = widget.widgets;
     each(cells, (cell: Cell) => {
-      if (widget.isSelected(cell) && cell.model.type === 'code') {
+      if (widget.isSelectedOrActive(cell) && cell.model.type === 'code') {
         cell.inputHidden = false;
       }
     });
@@ -1019,7 +1019,7 @@ namespace NotebookActions {
     let state = Private.getState(widget);
     let cells = widget.widgets;
     each(cells, (cell: Cell) => {
-      if (widget.isSelected(cell) && cell.model.type === 'code') {
+      if (widget.isSelectedOrActive(cell) && cell.model.type === 'code') {
         (cell as CodeCell).inputHidden = true;
       }
     });
@@ -1039,7 +1039,7 @@ namespace NotebookActions {
     let state = Private.getState(widget);
     let cells = widget.widgets;
     each(cells, (cell: Cell) => {
-      if (widget.isSelected(cell) && cell.model.type === 'code') {
+      if (widget.isSelectedOrActive(cell) && cell.model.type === 'code') {
         (cell as CodeCell).inputHidden = false;
       }
     });
@@ -1110,7 +1110,7 @@ namespace NotebookActions {
     let cells = widget.model.cells;
     let i = 0;
     each(widget.widgets, (child: MarkdownCell) => {
-      if (widget.isSelected(child)) {
+      if (widget.isSelectedOrActive(child)) {
         Private.setMarkdownHeader(cells.get(i), level);
       }
       i++;
@@ -1252,7 +1252,7 @@ namespace Private {
     let lastIndex = widget.activeCellIndex;
     let i = 0;
     each(widget.widgets, child => {
-      if (widget.isSelected(child)) {
+      if (widget.isSelectedOrActive(child)) {
         selected.push(child);
         lastIndex = i;
       }
@@ -1367,7 +1367,7 @@ namespace Private {
     clipboard.clear();
     let data: nbformat.IBaseCell[] = [];
     each(widget.widgets, child => {
-      if (widget.isSelected(child)) {
+      if (widget.isSelectedOrActive(child)) {
         data.push(child.model.toJSON());
       }
     });
@@ -1400,7 +1400,7 @@ namespace Private {
 
     cells.beginCompoundOperation();
     each(widget.widgets, (child, i) => {
-      if (!widget.isSelected(child)) {
+      if (!widget.isSelectedOrActive(child)) {
         return;
       }
       if (child.model.type !== value) {
@@ -1454,7 +1454,7 @@ namespace Private {
     // Find the cells to delete.
     each(widget.widgets, (child, i) => {
       let deletable = child.model.metadata.get('deletable');
-      if (widget.isSelected(child) && deletable !== false) {
+      if (widget.isSelectedOrActive(child) && deletable !== false) {
         toDelete.push(i);
       }
     });
