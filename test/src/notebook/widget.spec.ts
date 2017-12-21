@@ -814,7 +814,7 @@ describe('notebook/widget', () => {
         expect(selected(widget)).to.eql([]);
         widget.select(widget.activeCell);
         expect(selected(widget)).to.eql([widget.activeCellIndex]);
-      })
+      });
 
     });
 
@@ -1003,7 +1003,6 @@ describe('notebook/widget', () => {
 
         expect(widget.activeCellIndex).to.be(-1);
         expect(selectionChanged).to.be(0);
-
       });
 
     });
@@ -1036,7 +1035,6 @@ describe('notebook/widget', () => {
         // Check if active cell is inside selection.
         widget.activeCellIndex = 2;
         expect(() => widget.getContiguousSelection()).to.throwError(/Active cell not at endpoint of selection/);
-
       });
 
       it('returns null values if there is no selection', () => {
