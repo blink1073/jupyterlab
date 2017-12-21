@@ -997,7 +997,7 @@ describe('notebook/widget', () => {
         let selectionChanged = 0;
         widget.selectionChanged.connect((sender, args) => {
           selectionChanged += 1;
-        })
+        });
 
         widget.extendContiguousSelectionTo(3);
 
