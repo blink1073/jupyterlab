@@ -96,7 +96,7 @@ class DocumentWidgetManager implements IDisposable {
    *
    * @throws If the factory is not registered.
    */
-  createWidget(factory: DocumentRegistry.WidgetFactory, context: DocumentRegistry.Context): DocumentRegistry.IReadyWidget {
+  createWidget(factory: DocumentRegistry.IWidgetFactory, context: DocumentRegistry.IContext): DocumentRegistry.IReadyWidget {
     let widget = factory.createNew(context);
     Private.factoryProperty.set(widget, factory);
 
@@ -125,7 +125,7 @@ class DocumentWidgetManager implements IDisposable {
    *
    * @param widget - The widget to adopt.
    */
-  adoptWidget(context: DocumentRegistry.Context, widget: Widget): void {
+  adoptWidget(context: DocumentRegistry.IContext, widget: Widget): void {
     let widgets = Private.widgetsProperty.get(context);
     widgets.push(widget);
     MessageLoop.installMessageHook(widget, this);
@@ -146,7 +146,7 @@ class DocumentWidgetManager implements IDisposable {
    * This can be used to use an existing widget instead of opening
    * a new widget.
    */
-  findWidget(context: DocumentRegistry.Context, widgetName: string): DocumentRegistry.IReadyWidget | undefined {
+  findWidget(context: DocumentRegistry.IContext, widgetName: string): DocumentRegistry.IReadyWidget | undefined {
     let widgets = Private.widgetsProperty.get(context);
     if (!widgets) {
       return undefined;
@@ -167,7 +167,7 @@ class DocumentWidgetManager implements IDisposable {
    *
    * @returns The context associated with the widget, or `undefined`.
    */
-  contextForWidget(widget: Widget): DocumentRegistry.Context | undefined {
+  contextForWidget(widget: Widget): DocumentRegistry.IContext | undefined {
     return Private.contextProperty.get(widget);
   }
 
@@ -201,7 +201,7 @@ class DocumentWidgetManager implements IDisposable {
    *
    * @param context - The document context object.
    */
-  closeWidgets(context: DocumentRegistry.Context): Promise<void> {
+  closeWidgets(context: DocumentRegistry.IContext): Promise<void> {
     let widgets = Private.widgetsProperty.get(context);
     return Promise.all(
       toArray(map(widgets, widget => this.onClose(widget)))
@@ -214,7 +214,7 @@ class DocumentWidgetManager implements IDisposable {
    *
    * @param context - The document context object.
    */
-  deleteWidgets(context: DocumentRegistry.Context): Promise<void> {
+  deleteWidgets(context: DocumentRegistry.IContext): Promise<void> {
     let widgets = Private.widgetsProperty.get(context);
     return Promise.all(
       toArray(map(widgets, widget => this.onDelete(widget)))
@@ -385,7 +385,7 @@ class DocumentWidgetManager implements IDisposable {
   /**
    * Handle a file changed signal for a context.
    */
-  private _onFileChanged(context: DocumentRegistry.Context): void {
+  private _onFileChanged(context: DocumentRegistry.IContext): void {
     let widgets = Private.widgetsProperty.get(context);
     each(widgets, widget => { this.setCaption(widget); });
   }
@@ -393,7 +393,7 @@ class DocumentWidgetManager implements IDisposable {
   /**
    * Handle a path changed signal for a context.
    */
-  private _onPathChanged(context: DocumentRegistry.Context): void {
+  private _onPathChanged(context: DocumentRegistry.IContext): void {
     let widgets = Private.widgetsProperty.get(context);
     each(widgets, widget => { this.setCaption(widget); });
   }
@@ -430,7 +430,7 @@ namespace Private {
    * A private attached property for a widget context.
    */
   export
-  const contextProperty = new AttachedProperty<Widget, DocumentRegistry.Context | undefined>({
+  const contextProperty = new AttachedProperty<Widget, DocumentRegistry.IContext | undefined>({
     name: 'context',
     create: () => undefined
   });
@@ -439,7 +439,7 @@ namespace Private {
    * A private attached property for a widget factory.
    */
   export
-  const factoryProperty = new AttachedProperty<Widget, DocumentRegistry.WidgetFactory | undefined> ({
+  const factoryProperty = new AttachedProperty<Widget, DocumentRegistry.IWidgetFactory | undefined> ({
     name: 'factory',
     create: () => undefined
   });
@@ -448,7 +448,7 @@ namespace Private {
    * A private attached property for the widgets associated with a context.
    */
   export
-  const widgetsProperty = new AttachedProperty<DocumentRegistry.Context, Widget[]>({
+  const widgetsProperty = new AttachedProperty<DocumentRegistry.IContext, Widget[]>({
     name: 'widgets',
     create: () => []
   });

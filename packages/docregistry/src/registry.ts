@@ -26,7 +26,7 @@ import {
 } from '@phosphor/widgets';
 
 import {
-  IClientSession
+  IClientSession, Toolbar
 } from '@jupyterlab/apputils';
 
 import {
@@ -125,7 +125,7 @@ class DocumentRegistry implements IDisposable {
    * If an extension or global default is already registered, this factory
    * will override the existing default.
    */
-  addWidgetFactory(factory: DocumentRegistry.WidgetFactory): IDisposable {
+  addWidgetFactory(factory: DocumentRegistry.IWidgetFactory): IDisposable {
     let name = factory.name.toLowerCase();
     if (this._widgetFactories[name]) {
       console.warn(`Duplicate registered factory ${name}`);
@@ -190,7 +190,7 @@ class DocumentRegistry implements IDisposable {
    * the given factory is already registered, a warning will be logged
    * and this will be a no-op.
    */
-  addModelFactory(factory: DocumentRegistry.ModelFactory): IDisposable {
+  addModelFactory(factory: DocumentRegistry.IModelFactory): IDisposable {
     let name = factory.name.toLowerCase();
     if (this._modelFactories[name]) {
       console.warn(`Duplicate registered factory ${name}`);
@@ -225,7 +225,7 @@ class DocumentRegistry implements IDisposable {
    * If the extension is already registered for the given
    * widget name, a warning will be logged and this will be a no-op.
    */
-  addWidgetExtension(widgetName: string, extension: DocumentRegistry.WidgetExtension): IDisposable {
+  addWidgetExtension(widgetName: string, extension: DocumentRegistry.IWidgetExtension): IDisposable {
     widgetName = widgetName.toLowerCase();
     if (!(widgetName in this._extenders)) {
       this._extenders[widgetName] = [];
@@ -300,7 +300,7 @@ class DocumentRegistry implements IDisposable {
    * - all other path-specific factories
    * - all other global factories
    */
-  preferredWidgetFactories(path: string): DocumentRegistry.WidgetFactory[] {
+  preferredWidgetFactories(path: string): DocumentRegistry.IWidgetFactory[] {
     let factories = new Set<string>();
 
     // Get the ordered matching file types.
@@ -336,7 +336,7 @@ class DocumentRegistry implements IDisposable {
 
     // Construct the return list, checking to make sure the corresponding
     // model factories are registered.
-    let factoryList: DocumentRegistry.WidgetFactory[] = [];
+    let factoryList: DocumentRegistry.IWidgetFactory[] = [];
     factories.forEach(name => {
       let factory = this._widgetFactories[name];
       if (!factory) {
@@ -361,7 +361,7 @@ class DocumentRegistry implements IDisposable {
    * #### Notes
    * This is equivalent to the first value in [[preferredWidgetFactories]].
    */
-  defaultWidgetFactory(path?: string): DocumentRegistry.WidgetFactory {
+  defaultWidgetFactory(path?: string): DocumentRegistry.IWidgetFactory {
     if (!path) {
       return this._widgetFactories[this._defaultWidgetFactory];
     }
@@ -373,7 +373,7 @@ class DocumentRegistry implements IDisposable {
    *
    * @returns A new iterator of widget factories.
    */
-  widgetFactories(): IIterator<DocumentRegistry.WidgetFactory> {
+  widgetFactories(): IIterator<DocumentRegistry.IWidgetFactory> {
     return map(Object.keys(this._widgetFactories), name => {
       return this._widgetFactories[name];
     });
@@ -384,7 +384,7 @@ class DocumentRegistry implements IDisposable {
    *
    * @returns A new iterator of model factories.
    */
-  modelFactories(): IIterator<DocumentRegistry.ModelFactory> {
+  modelFactories(): IIterator<DocumentRegistry.IModelFactory> {
     return map(Object.keys(this._modelFactories), name => {
       return this._modelFactories[name];
     });
@@ -397,10 +397,10 @@ class DocumentRegistry implements IDisposable {
    *
    * @returns A new iterator over the widget extensions.
    */
-  widgetExtensions(widgetName: string): IIterator<DocumentRegistry.WidgetExtension> {
+  widgetExtensions(widgetName: string): IIterator<DocumentRegistry.IWidgetExtension> {
     widgetName = widgetName.toLowerCase();
     if (!(widgetName in this._extenders)) {
-      return empty<DocumentRegistry.WidgetExtension>();
+      return empty<DocumentRegistry.IWidgetExtension>();
     }
     return new ArrayIterator(this._extenders[widgetName]);
   }
@@ -421,7 +421,7 @@ class DocumentRegistry implements IDisposable {
    *
    * @returns A widget factory instance.
    */
-  getWidgetFactory(widgetName: string): DocumentRegistry.WidgetFactory | undefined {
+  getWidgetFactory(widgetName: string): DocumentRegistry.IWidgetFactory | undefined {
     return this._widgetFactories[widgetName.toLowerCase()];
   }
 
@@ -432,7 +432,7 @@ class DocumentRegistry implements IDisposable {
    *
    * @returns A model factory instance.
    */
-  getModelFactory(name: string): DocumentRegistry.ModelFactory | undefined {
+  getModelFactory(name: string): DocumentRegistry.IModelFactory | undefined {
     return this._modelFactories[name.toLowerCase()];
   }
 
@@ -537,13 +537,13 @@ class DocumentRegistry implements IDisposable {
     return fts;
   }
 
-  private _modelFactories: { [key: string]: DocumentRegistry.ModelFactory } = Object.create(null);
-  private _widgetFactories: { [key: string]: DocumentRegistry.WidgetFactory } = Object.create(null);
+  private _modelFactories: { [key: string]: DocumentRegistry.IModelFactory } = Object.create(null);
+  private _widgetFactories: { [key: string]: DocumentRegistry.IWidgetFactory } = Object.create(null);
   private _defaultWidgetFactory = '';
   private _defaultWidgetFactories: { [key: string]: string } = Object.create(null);
   private _widgetFactoryExtensions: {[key: string]: string[] } = Object.create(null);
   private _fileTypes: DocumentRegistry.IFileType[] = [];
-  private _extenders: { [key: string] : DocumentRegistry.WidgetExtension[] } = Object.create(null);
+  private _extenders: { [key: string] : DocumentRegistry.IWidgetExtension[] } = Object.create(null);
   private _changed = new Signal<this, DocumentRegistry.IChangedArgs>(this);
   private _isDisposed = false;
 }
@@ -563,7 +563,7 @@ namespace DocumentRegistry {
      * The text model factory for the registry.  A default instance will
      * be used if not given.
      */
-    textModelFactory?: ModelFactory;
+    textModelFactory?: IModelFactory;
 
     /**
      * The initial file types for the registry.
@@ -658,7 +658,7 @@ namespace DocumentRegistry {
    * The document context object.
    */
   export
-  interface IContext<T extends IModel> extends IDisposable {
+  interface IContext<T extends IModel = IModel> extends IDisposable {
     /**
      * A signal emitted when the path changes.
      */
@@ -698,27 +698,13 @@ namespace DocumentRegistry {
 
     /**
      * The current contents model associated with the document
-     *
-     * #### Notes
-     * The contents model will be null until the context is ready.
-     * It will have an  empty `contents` field.
      */
-    readonly contentsModel: Contents.IModel | null;
+    readonly contentsModel: Contents.IModel;
 
     /**
      * The url resolver for the context.
      */
     readonly urlResolver: IRenderMime.IResolver;
-
-    /**
-     * Whether the context is ready.
-     */
-    readonly isReady: boolean;
-
-    /**
-     * A promise that is fulfilled when the context is ready.
-     */
-    readonly ready: Promise<void>;
 
     /**
      * Save the document contents to disk.
@@ -787,13 +773,6 @@ namespace DocumentRegistry {
   }
 
   /**
-   * A type alias for a context.
-   */
-  export
-  type Context = IContext<IModel>;
-
-
-  /**
    * A type alias for a code context.
    */
   export
@@ -813,6 +792,12 @@ namespace DocumentRegistry {
      * The file types the widget can view.
      */
     readonly fileTypes: ReadonlyArray<string>;
+
+    /**
+     * The callback for a new document widget created using the factory.
+     * The default is a no-op.
+     */
+    readonly callback?: (widget: IDocumentWidget) => void;
 
     /**
      * The file types for which the factory should be the default.
@@ -844,11 +829,21 @@ namespace DocumentRegistry {
    * A widget for a document.
    */
   export
-  interface IReadyWidget extends Widget {
+  interface IDocumentWidget<T extends Widget = Widget, U extends IModel = IModel> extends Widget {
     /**
-     * A promise that resolves when the widget is ready.
+     * The content widget for the document.
      */
-    readonly ready: Promise<void>;
+    readonly content: T;
+
+    /**
+     * The toolbar for the document.
+     */
+    readonly toolbar: Toolbar;
+
+    /**
+     * The context for the document.
+     */
+    readonly context: IContext<U>;
   }
 
   /**
@@ -876,49 +871,39 @@ namespace DocumentRegistry {
    * The interface for a widget factory.
    */
   export
-  interface IWidgetFactory<T extends IReadyWidget, U extends IModel> extends IDisposable, IWidgetFactoryOptions {
+  interface IWidgetFactory<T extends Widget = Widget, U extends IModel = IModel> extends IDisposable, IWidgetFactoryOptions {
     /**
-     * A signal emitted when a widget is created.
+     * A callback for a new document widget created using the factory.
      */
-    widgetCreated: ISignal<IWidgetFactory<T, U>, T>;
+    callback: (widget: IDocumentWidget<T, U>) => void;
 
     /**
      * Create a new widget given a context.
-     *
-     * #### Notes
-     * It should emit the [widgetCreated] signal with the new widget.
      */
-    createNew(context: IContext<U>): T;
-  }
+    createWidget(context: IContext<U>): T | Promise<T>;
 
-  /**
-   * A type alias for a standard widget factory.
-   */
-  export
-  type WidgetFactory = IWidgetFactory<IReadyWidget, IModel>;
+    /**
+     * Create a new toolbar given a context and a widget.
+     */
+    createToolbar(context: IContext<U>, widget: T): Toolbar | Promise<Toolbar>;
+  }
 
   /**
    * An interface for a widget extension.
    */
   export
-  interface IWidgetExtension<T extends Widget, U extends IModel> {
+  interface IWidgetExtension<T extends Widget = Widget, U extends IModel = IModel> {
     /**
      * Create a new extension for a given widget.
      */
-    createNew(widget: T, context: IContext<U>): IDisposable;
+    createNew(widget: IDocumentWidget<T, U>): IDisposable;
   }
-
-  /**
-   * A type alias for a standard widget extension.
-   */
-  export
-  type WidgetExtension = IWidgetExtension<Widget, IModel>;
 
   /**
    * The interface for a model factory.
    */
   export
-  interface IModelFactory<T extends IModel> extends IDisposable {
+  interface IModelFactory<T extends IModel = IModel> extends IDisposable {
     /**
      * The name of the model.
      */
@@ -948,12 +933,6 @@ namespace DocumentRegistry {
      */
     preferredLanguage(path: string): string;
   }
-
-  /**
-   * A type alias for a standard model factory.
-   */
-  export
-  type ModelFactory = IModelFactory<IModel>;
 
   /**
    * A type alias for a code model factory.

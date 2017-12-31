@@ -141,7 +141,7 @@ class SaveHandler implements IDisposable {
   private _autosaveTimer = -1;
   private _minInterval = -1;
   private _interval = -1;
-  private _context: DocumentRegistry.Context;
+  private _context: DocumentRegistry.IContext;
   private _isActive = false;
   private _inDialog = false;
   private _isDisposed = false;
@@ -162,7 +162,7 @@ namespace SaveHandler {
     /**
      * The context asssociated with the file.
      */
-    context: DocumentRegistry.Context;
+    context: DocumentRegistry.IContext;
 
     /**
      * The minimum save interval in seconds (default is two minutes).

@@ -2,20 +2,24 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  Mode
-} from '@jupyterlab/codemirror';
-
-import {
-  Contents
-} from '@jupyterlab/services';
-
-import {
   JSONValue
 } from '@phosphor/coreutils';
 
 import {
   ISignal, Signal
 } from '@phosphor/signaling';
+
+import {
+  Widget
+} from '@phosphor/widgets';
+
+import {
+  Toolbar
+} from '@jupyterlab/apputils';
+
+import {
+  Mode
+} from '@jupyterlab/codemirror';
 
 import {
   CodeEditor
@@ -28,6 +32,10 @@ import {
 import {
   IModelDB
 } from '@jupyterlab/observables';
+
+import {
+  Contents
+} from '@jupyterlab/services';
 
 import {
   DocumentRegistry
@@ -280,7 +288,7 @@ class Base64ModelFactory extends TextModelFactory {
  * The default implemetation of a widget factory.
  */
 export
-abstract class ABCWidgetFactory<T extends DocumentRegistry.IReadyWidget, U extends DocumentRegistry.IModel> implements DocumentRegistry.IWidgetFactory<T, U> {
+abstract class ABCWidgetFactory<T extends Widget = Widget, U extends DocumentRegistry.IModel = DocumentRegistry.IModel> implements DocumentRegistry.IWidgetFactory<T, U> {
   /**
    * Construct a new `ABCWidgetFactory`.
    */
@@ -292,14 +300,13 @@ abstract class ABCWidgetFactory<T extends DocumentRegistry.IReadyWidget, U exten
     this._modelName = options.modelName || 'text';
     this._preferKernel = !!options.preferKernel;
     this._canStartKernel = !!options.canStartKernel;
+    this.callback = options.callback || Private.noOp;
   }
 
   /**
-   * A signal emitted when a widget is created.
+   * The callback for a new document widget created using the factory.
    */
-  get widgetCreated(): ISignal<DocumentRegistry.IWidgetFactory<T, U>, T> {
-    return this._widgetCreated;
-  }
+  readonly callback: (widget: DocumentRegistry.IDocumentWidget<T, U>) => void;
 
   /**
    * Get whether the model factory has been disposed.
@@ -365,21 +372,16 @@ abstract class ABCWidgetFactory<T extends DocumentRegistry.IReadyWidget, U exten
   }
 
   /**
-   * Create a new widget given a document model and a context.
-   *
-   * #### Notes
-   * It should emit the [widgetCreated] signal with the new widget.
+   * Create a new widget given a context.
    */
-  createNew(context: DocumentRegistry.IContext<U>): T {
-    let widget = this.createNewWidget(context);
-    this._widgetCreated.emit(widget);
-    return widget;
-  }
+  abstract createWidget(context: DocumentRegistry.IContext<U>): T | Promise<T>;
 
   /**
-   * Create a widget for a context.
+   * Create a new toolbar given a context and a widget.
    */
-  protected abstract createNewWidget(context: DocumentRegistry.IContext<U>): T;
+  createToolbar(context: DocumentRegistry.IContext<U>, widget: T): Toolbar | Promise<Toolbar> {
+    return new Toolbar();
+  }
 
   private _isDisposed = false;
   private _name: string;
@@ -389,5 +391,13 @@ abstract class ABCWidgetFactory<T extends DocumentRegistry.IReadyWidget, U exten
   private _modelName: string;
   private _fileTypes: string[];
   private _defaultFor: string[];
-  private _widgetCreated = new Signal<DocumentRegistry.IWidgetFactory<T, U>, T>(this);
+}
+
+
+/**
+ * The namespace for module private data.
+ */
+namespace Private {
+  export
+  function noOp(): void { /* no-op */ }
 }
