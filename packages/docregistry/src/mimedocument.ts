@@ -10,7 +10,7 @@ import {
 } from '@phosphor/widgets';
 
 import {
-  ActivityMonitor
+  ActivityMonitor, PromiseChain
 } from '@jupyterlab/coreutils';
 
 import {
@@ -126,11 +126,13 @@ namespace Private {
      * Render the mime content.
      */
     render(): Promise<void> {
-      if (this._isRendering) {
-        this._renderRequested = true;
-        return Promise.resolve(void 0);
-      }
-      this._renderRequested = false;
+      return this._chain.execute(this._render);
+    }
+
+    /**
+     * Render the mime content.
+     */
+    private _render(): Promise<void> {
       let context = this._context;
       let model = context.model;
       let data: JSONObject = {};
@@ -141,16 +143,11 @@ namespace Private {
       }
       let mimeModel = new MimeModel({ data, callback: this._changeCallback });
 
-      this._isRendering = true;
       return this._renderer.renderModel(mimeModel).then(() => {
         if (!this._hasRendered) {
           this._startMonitor();
         }
         this._hasRendered = true;
-        this._isRendering = false;
-        if (this._renderRequested) {
-          return this.render();
-        }
       });
     }
 
@@ -189,10 +186,9 @@ namespace Private {
     private _renderer: IRenderMime.IRenderer;
     private _mimeType: string;
     private _hasRendered = false;
-    private _isRendering = false;
-    private _renderRequested = false;
-    private _renderTimeout = -1;
+    private _renderTimeout: number;
     private _dataType: 'string' | 'json';
+    private _chain = new PromiseChain<void>();
   }
 
   /**

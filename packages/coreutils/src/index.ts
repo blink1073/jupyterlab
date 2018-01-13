@@ -8,6 +8,7 @@ export * from './markdowncodeblocks';
 export * from './nbformat';
 export * from './pageconfig';
 export * from './path';
+export * from './promisechain';
 export * from './settingregistry';
 export * from './statedb';
 export * from './text';
