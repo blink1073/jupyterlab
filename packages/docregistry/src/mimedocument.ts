@@ -10,7 +10,7 @@ import {
 } from '@phosphor/widgets';
 
 import {
-  ActivityMonitor, PromiseChain
+  ActivityMonitor, PromiseQueue
 } from '@jupyterlab/coreutils';
 
 import {
@@ -39,23 +39,19 @@ class MimeDocumentFactory extends ABCWidgetFactory {
     this._rendermime = options.rendermime;
     this._renderTimeout = options.renderTimeout || 1000;
     this._dataType = options.dataType || 'string';
-    this._fileType = options.primaryFileType;
+    this._mimeType = options.mimeType;
   }
 
   /**
    * Create a new widget given a context.
    */
   createWidget(context: DocumentRegistry.IContext): Promise<Widget> {
-    let ft = this._fileType;
-    let mimeType = ft.mimeTypes.length ? ft.mimeTypes[0] : 'text/plain';
     let rendermime = this._rendermime.clone({ resolver: context.urlResolver });
-    let renderer = rendermime.createRenderer(mimeType);
-    renderer.title.iconClass = ft.iconClass;
-    renderer.title.iconLabel = ft.iconLabel;
+    let renderer = rendermime.createRenderer(this._mimeType);
     let handler = new Private.MimeDocumentHandler({
       renderer,
       context,
-      mimeType,
+      mimeType: this._mimeType,
       renderTimeout: this._renderTimeout,
       dataType: this._dataType
     });
@@ -65,7 +61,7 @@ class MimeDocumentFactory extends ABCWidgetFactory {
   private _rendermime: RenderMimeRegistry;
   private _renderTimeout: number;
   private _dataType: 'string' | 'json';
-  private _fileType: DocumentRegistry.IFileType;
+  private _mimeType: string;
 }
 
 
@@ -80,9 +76,9 @@ namespace MimeDocumentFactory {
   export
   interface IOptions extends DocumentRegistry.IWidgetFactoryOptions {
     /**
-     * The primary file type associated with the document.
+     * The MIME type associated with the document.
      */
-    primaryFileType: DocumentRegistry.IFileType;
+    mimeType: string;
 
     /**
      * The rendermime instance.
@@ -126,7 +122,7 @@ namespace Private {
      * Render the mime content.
      */
     render(): Promise<void> {
-      return this._chain.execute(this._render);
+      return this._queue.execute(this._render);
     }
 
     /**
@@ -188,7 +184,7 @@ namespace Private {
     private _hasRendered = false;
     private _renderTimeout: number;
     private _dataType: 'string' | 'json';
-    private _chain = new PromiseChain<void>();
+    private _queue = new PromiseQueue<void>();
   }
 
   /**
