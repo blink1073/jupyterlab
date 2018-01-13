@@ -2,7 +2,7 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  JSONObject, PromiseDelegate
+  JSONObject
 } from '@phosphor/coreutils';
 
 import {
@@ -115,10 +115,11 @@ namespace Private {
      * Construct a new markdown widget.
      */
     constructor(options: IHandlerOptions) {
-      let context = this._context = options.context;
+      this._context = options.context;
       this._mimeType = options.mimeType;
       this._dataType = options.dataType || 'string';
       this._renderer = options.renderer;
+      this._renderTimeout = options.renderTimeout;
     }
 
     /**
@@ -159,13 +160,13 @@ namespace Private {
     private _startMonitor(): void {
       // Throttle the rendering rate of the widget.
       this._monitor = new ActivityMonitor({
-        signal: context.model.contentChanged,
-        timeout: options.renderTimeout
+        signal: this._context.model.contentChanged,
+        timeout: this._renderTimeout
       });
       this._renderer.disposed.connect(() => {
         this._monitor.dispose();
       }, this);
-      this._monitor.activityStopped.connect(this._render, this);
+      this._monitor.activityStopped.connect(this.render, this);
     }
 
     /**
@@ -188,6 +189,9 @@ namespace Private {
     private _renderer: IRenderMime.IRenderer;
     private _mimeType: string;
     private _hasRendered = false;
+    private _isRendering = false;
+    private _renderRequested = false;
+    private _renderTimeout = -1;
     private _dataType: 'string' | 'json';
   }
 
