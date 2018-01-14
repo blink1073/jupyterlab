@@ -106,8 +106,9 @@ namespace createModel {
  */
 export
 function createContext<T extends DocumentRegistry.IModel>(options: createContext.IOptions<T>): Promise<DocumentRegistry.IContext<T>> {
-  return options.manager.ready.then(() => {
-    return options.manager.contents.get(options.path, { content: false });
+  const { manager, path } = options;
+  return manager.ready.then(() => {
+    return manager.contents.get(path, { content: false });
   }).then(contentsModel => {
     return new Private.Context({ ...options, contentsModel });
   });

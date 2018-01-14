@@ -68,14 +68,7 @@ interface IDocumentManager extends DocumentManager {}
 
 
 /**
- * The document manager.
- *
- * #### Notes
- * The document manager is used to register model and widget creators,
- * and the file browser uses the document manager to create widgets. The
- * document manager maintains a context for each path and model type that is
- * open, and a list of widgets for each context. The document manager is in
- * control of the proper closing and disposal of the widgets and contexts.
+ * A manager handling the lifecycle of document widgets.
  */
 export
 class DocumentManager implements IDisposable {
@@ -84,8 +77,7 @@ class DocumentManager implements IDisposable {
    */
   constructor(options: DocumentManager.IOptions) {
     this.registry = options.registry;
-    this.services = options.manager;
-
+    this._services = options.services;
     this._opener = options.opener;
 
     let widgetManager = new DocumentWidgetManager({ registry: this.registry });
@@ -97,11 +89,6 @@ class DocumentManager implements IDisposable {
    * The registry used by the manager.
    */
   readonly registry: DocumentRegistry;
-
-  /**
-   * The service manager used by the manager.
-   */
-  readonly services: ServiceManager.IManager;
 
   /**
    * A signal emitted when one of the documents is activated.
@@ -144,7 +131,7 @@ class DocumentManager implements IDisposable {
    *  Uses the same widget factory and context as the source, or returns
    *  `undefined` if the source widget is not managed by this manager.
    */
-  cloneWidget(widget: Widget): DocumentRegistry.IReadyWidget | undefined {
+  cloneWidget(widget: Widget): DocumentRegistry.IPlaceHolder | undefined {
     return this._widgetManager.cloneWidget(widget);
   }
 
@@ -173,30 +160,6 @@ class DocumentManager implements IDisposable {
   }
 
   /**
-   * Get the document context for a widget.
-   *
-   * @param widget - The widget of interest.
-   *
-   * @returns The context associated with the widget, or `undefined`.
-   */
-  contextForWidget(widget: Widget): DocumentRegistry.Context | undefined {
-    return this._widgetManager.contextForWidget(widget);
-  }
-
-  /**
-   * Copy a file.
-   *
-   * @param fromFile - The full path of the original file.
-   *
-   * @param toDir - The full path to the target directory.
-   *
-   * @returns A promise which resolves to the contents of the file.
-   */
-  copy(fromFile: string, toDir: string): Promise<Contents.IModel> {
-    return this.services.contents.copy(fromFile, toDir);
-  }
-
-  /**
    * Create a new file and return the widget used to view it.
    *
    * @param path - The file path to create.
@@ -205,38 +168,14 @@ class DocumentManager implements IDisposable {
    *
    * @param kernel - An optional kernel name/id to override the default.
    *
-   * @returns The created widget, or `undefined`.
+   * @returns A promise that resolves with a document widget.
    *
    * #### Notes
-   * This function will return `undefined` if a valid widget factory
+   * This function will resolve with `undefined` if a valid widget factory
    * cannot be found.
    */
-  createNew(path: string, widgetName='default', kernel?: Partial<Kernel.IModel>): Widget {
+  createNew(path: string, widgetName='default', kernel?: Partial<Kernel.IModel>): Promise<DocumentRegistry.IDocumentWidget> {
     return this._createOrOpenDocument('create', path, widgetName, kernel);
-  }
-
-  /**
-   * Delete a file.
-   *
-   * @param path - The full path to the file to be deleted.
-   *
-   * @returns A promise which resolves when the file is deleted.
-   *
-   * #### Notes
-   * If there is a running session associated with the file and no other
-   * sessions are using the kernel, the session will be shut down.
-   */
-  deleteFile(path: string): Promise<void> {
-    return this.services.sessions.stopIfNeeded(path).then(() => {
-      return this.services.contents.delete(path);
-    })
-    .then(() => {
-      let context = this._contextForPath(path);
-      if (context) {
-        return this._widgetManager.deleteWidgets(context);
-      }
-      return Promise.resolve(void 0);
-    });
   }
 
   /**
@@ -252,7 +191,7 @@ class DocumentManager implements IDisposable {
    * This can be used to use an existing widget instead of opening
    * a new widget.
    */
-  findWidget(path: string, widgetName='default'): DocumentRegistry.IReadyWidget | undefined {
+  findWidget(path: string, widgetName='default'): DocumentManager.IPlaceHolder | undefined {
     if (widgetName === 'default') {
       let factory = this.registry.defaultWidgetFactory(path);
       if (!factory) {
@@ -265,18 +204,6 @@ class DocumentManager implements IDisposable {
       return this._widgetManager.findWidget(context, widgetName);
     }
     return undefined;
-  }
-
-  /**
-   * Create a new untitled file.
-   *
-   * @param options - The file content creation options.
-   */
-  newUntitled(options: Contents.ICreateOptions): Promise<Contents.IModel> {
-    if (options.type === 'file') {
-      options.ext = options.ext || '.txt';
-    }
-    return this.services.contents.newUntitled(options);
   }
 
   /**
@@ -294,7 +221,7 @@ class DocumentManager implements IDisposable {
    * This function will return `undefined` if a valid widget factory
    * cannot be found.
    */
-  open(path: string, widgetName='default', kernel?: Partial<Kernel.IModel>, options?: DocumentRegistry.IOpenOptions ): DocumentRegistry.IReadyWidget | undefined {
+  open(path: string, widgetName='default', kernel?: Partial<Kernel.IModel>, options?: DocumentRegistry.IOpenOptions ): DocumentManager.IPlaceHolder | undefined {
     return this._createOrOpenDocument('open', path, widgetName, kernel, options);
   }
 
@@ -314,47 +241,13 @@ class DocumentManager implements IDisposable {
    * This function will return `undefined` if a valid widget factory
    * cannot be found.
    */
-  openOrReveal(path: string, widgetName='default', kernel?: Partial<Kernel.IModel>, options?: DocumentRegistry.IOpenOptions ): DocumentRegistry.IReadyWidget | undefined {
+  openOrReveal(path: string, widgetName='default', kernel?: Partial<Kernel.IModel>, options?: DocumentRegistry.IOpenOptions ): DocumentManager.IPlaceHolder | undefined {
     let widget = this.findWidget(path, widgetName);
     if (widget) {
       this._opener.open(widget, options || {});
       return widget;
     }
     return this.open(path, widgetName, kernel, options || {});
-  }
-
-  /**
-   * Overwrite a file.
-   *
-   * @param oldPath - The full path to the original file.
-   *
-   * @param newPath - The full path to the new file.
-   *
-   * @returns A promise containing the new file contents model.
-   */
-  overwrite(oldPath: string, newPath: string): Promise<Contents.IModel> {
-    // Cleanly overwrite the file by moving it, making sure the original does
-    // not exist, and then renaming to the new path.
-    const tempPath = `${newPath}.${uuid()}`;
-    const cb = () => this.rename(tempPath, newPath);
-    return this.rename(oldPath, tempPath).then(() => {
-      return this.deleteFile(newPath);
-    }).then(cb, cb);
-  }
-
-  /**
-   * Rename a file or directory.
-   *
-   * @param oldPath - The full path to the original file.
-   *
-   * @param newPath - The full path to the new file.
-   *
-   * @returns A promise containing the new file contents model.  The promise
-   * will reject if the newPath already exists.  Use [[overwrite]] to overwrite
-   * a file.
-   */
-  rename(oldPath: string, newPath: string): Promise<Contents.IModel> {
-    return this.services.contents.rename(oldPath, newPath);
   }
 
   /**
@@ -382,7 +275,7 @@ class DocumentManager implements IDisposable {
       this._widgetManager.adoptWidget(context, widget);
       this._opener.open(widget, options);
     };
-    let modelDBFactory = this.services.contents.getModelDBFactory(path) || undefined;
+    let modelDBFactory = this._services.contents.getModelDBFactory(path) || undefined;
     let context = new Context({
       opener: adopter,
       manager: this.services,
@@ -481,6 +374,7 @@ class DocumentManager implements IDisposable {
   private _contexts: Private.IContext[] = [];
   private _opener: DocumentManager.IWidgetOpener;
   private _widgetManager: DocumentWidgetManager;
+  private _services: ServiceManager.IManager;
   private _isDisposed = false;
 }
 
@@ -503,12 +397,23 @@ namespace DocumentManager {
     /**
      * A service manager instance.
      */
-    manager: ServiceManager.IManager;
+    services: ServiceManager.IManager;
 
     /**
      * A widget opener for sibling widgets.
      */
     opener: IWidgetOpener;
+  }
+
+  /**
+   * The interface for a placeholder widget.
+   */
+  export
+  interface IPlaceHolder extends Widget {
+    /**
+     * A promise that resolves with the document widget.
+     */
+    widgetPromise: Promise<DocumentRegistry.IDocumentWidget>;
   }
 
   /**
