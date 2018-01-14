@@ -209,10 +209,6 @@ namespace Private {
         session: this.session,
         contents: manager.contents
       });
-
-      // Add a checkpoint if none exists and the file is writable.
-      // TODO: this should be handled externally by the document manager.
-      this._maybeCheckpoint(false);
     }
 
     /**
@@ -444,6 +440,7 @@ namespace Private {
         this.session.setName(PathExt.basename(localPath));
         this._path = newPath;
         this._updateContentsModel(change.newValue as Contents.IModel);
+        this._hasCheckpointed = false;
         this._pathChanged.emit(this.path);
       }
     }
@@ -458,6 +455,7 @@ namespace Private {
       let path = this.session.path;
       if (path !== this.path) {
         this._path = path;
+        this._hasCheckpointed = false;
         this._pathChanged.emit(path);
       }
     }
@@ -488,9 +486,9 @@ namespace Private {
      * Save the model.
      */
     private _save(): Promise<Contents.IModel> {
-      return Private.saveModel(
+      return this._maybeCheckpoint().then(() => Private.saveModel(
         this._manager.contents, this.factory, this.model, this.path
-      );
+      ));
     }
 
     /**
@@ -547,25 +545,22 @@ namespace Private {
     }
 
     /**
-     * Add a checkpoint the file is writable.
+     * Add a checkpoint the file is writable and we have not yet
+     * created a checkpoint.
      */
-    private _maybeCheckpoint(force: boolean): Promise<void> {
+    private _maybeCheckpoint(): Promise<void> {
       let writable = this.contentsModel.writable;
-      let promise = Promise.resolve(void 0);
-      if (!writable) {
-        return promise;
+      if (!writable || this._hasCheckpointed) {
+        return Promise.resolve(void 0);
       }
-      if (force) {
-        promise = this.createCheckpoint();
-      } else {
-        promise = this.listCheckpoints().then(checkpoints => {
-          writable = this.contentsModel.writable;
-          if (!this.isDisposed && !checkpoints.length && writable) {
-            return this.createCheckpoint().then(() => { /* no-op */ });
-          }
-        });
-      }
-      return promise.catch(err => {
+      return this.listCheckpoints().then(checkpoints => {
+        writable = this.contentsModel.writable;
+        if (!this.isDisposed && !checkpoints.length && writable) {
+          return this.createCheckpoint().then(() => {
+            this._hasCheckpointed = true;
+          });
+        }
+      }).catch(err => {
         // Handle a read-only folder.
         if (!err.response || err.response.status !== 403) {
           throw err;
@@ -630,11 +625,9 @@ namespace Private {
     private _finishSaveAs(newPath: string): Promise<void> {
       this._path = newPath;
       return this.session.setPath(newPath).then(() => {
-        this.session.setName(newPath.split('/').pop()!);
-        return this.save();
+        return this.session.setName(newPath.split('/').pop()!);
       }).then(() => {
-        this._pathChanged.emit(this.path);
-        return this._maybeCheckpoint(true);
+        return this.save();
       });
     }
 
@@ -646,6 +639,7 @@ namespace Private {
     private _pathChanged = new Signal<this, string>(this);
     private _fileChanged = new Signal<this, Contents.IModel>(this);
     private _disposed = new Signal<this, void>(this);
+    private _hasCheckpointed = false;
   }
 
 
