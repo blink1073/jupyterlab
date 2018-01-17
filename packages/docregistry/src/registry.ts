@@ -833,7 +833,7 @@ namespace DocumentRegistry {
     /**
      * The content widget for the document.
      */
-    readonly content: T;
+    readonly content: Promise<T>;
 
     /**
      * The toolbar for the document.
@@ -843,7 +843,7 @@ namespace DocumentRegistry {
     /**
      * The context for the document.
      */
-    readonly context: IContext<U>;
+    readonly context: Promise<IContext<U>>;
   }
 
   /**
