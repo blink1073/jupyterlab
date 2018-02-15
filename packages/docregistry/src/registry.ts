@@ -833,12 +833,20 @@ namespace DocumentRegistry {
     /**
      * The content widget for the document.
      */
-    readonly content: Promise<T>;
+    readonly content: T | null;
 
     /**
      * The toolbar for the document.
      */
-    readonly toolbar: Toolbar;
+    readonly toolbar: Toolbar | null;
+
+    /**
+     * A promise that resolves when the document is ready.
+     *
+     * #### Notes
+     * The content and the toolbar will be null until this is resolved.
+     */
+    readonly ready: Promise<void>;
 
     /**
      * The context for the document.
@@ -878,14 +886,9 @@ namespace DocumentRegistry {
     callback: (widget: IDocumentWidget<T, U>) => void;
 
     /**
-     * Create a new widget given a context.
+     * Create a new widget given a promise to context and a toolbar.
      */
-    createWidget(context: IContext<U>): T | Promise<T>;
-
-    /**
-     * Create a new toolbar given a context and a widget.
-     */
-    createToolbar(context: IContext<U>, widget: T): Toolbar | Promise<Toolbar>;
+    createWidget(context: Promise<IContext<U>>, toolbar: Toolbar): T | Promise<T>;
   }
 
   /**

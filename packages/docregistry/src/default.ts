@@ -372,16 +372,9 @@ abstract class ABCWidgetFactory<T extends Widget = Widget, U extends DocumentReg
   }
 
   /**
-   * Create a new widget given a context.
+   * Create a new widget given a context and a toolbar.
    */
-  abstract createWidget(context: DocumentRegistry.IContext<U>): T | Promise<T>;
-
-  /**
-   * Create a new toolbar given a context and a widget.
-   */
-  createToolbar(context: DocumentRegistry.IContext<U>, widget: T): Toolbar | Promise<Toolbar> {
-    return new Toolbar();
-  }
+  abstract createWidget(context: Promise<DocumentRegistry.IContext<U>>, toolbar: Toolbar): T | Promise<T>;
 
   private _isDisposed = false;
   private _name: string;
