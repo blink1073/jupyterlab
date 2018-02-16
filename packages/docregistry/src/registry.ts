@@ -862,23 +862,32 @@ namespace DocumentRegistry {
   export
   interface IWidgetFactory<T extends Widget = Widget, U extends IModel = IModel> extends IDisposable, IWidgetFactoryOptions {
     /**
-     * A callback for a new document widget created using the factory.
-     */
-    callback: (widget: IDocumentWidget<T, U>) => void;
-
-    /**
      * Create a new content widget.
+     *
+     * #### Notes
+     * This happens first in the widget factory lifecycle.
      */
     create(context: IContext<U>): T;
 
     /**
-     * Populate a widget created by this factory and its toolbar.
+     * Initialze a widget created by this factory and its toolbar.
      *
      * #### Notes
+     * This happens second in the widget factory lifecycle.
      * The returned promise is used to determine when fully
      * populated (in addition to `context.populated`).
      */
     populate(widget: T, context: IContext<U>, toolbar: Toolbar): Promise<void>;
+
+    /**
+     * Finalize a new document widget created using the factory.
+     *
+     * #### Notes
+     * This happens last in the widget factory lifecycle.
+     * This is typically where the widget factory would add the top level
+     * document widget to an instance tracker.
+     */
+    finalize(widget: IDocumentWidget<T, U>);
   }
 
   /**
