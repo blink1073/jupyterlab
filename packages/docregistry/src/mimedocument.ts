@@ -6,8 +6,8 @@ import {
 } from '@phosphor/coreutils';
 
 import {
-  Widget
-} from '@phosphor/widgets';
+  Toolbar
+} from '@jupyterlab/apputils';
 
 import {
   ActivityMonitor, PromiseQueue
@@ -30,7 +30,7 @@ import {
  * An implementation of a widget factory for a rendered mimetype document.
  */
 export
-class MimeDocumentFactory extends ABCWidgetFactory {
+class MimeDocumentFactory extends ABCWidgetFactory<IRenderMime.IRenderer> {
   /**
    * Construct a new markdown widget factory.
    */
@@ -45,17 +45,23 @@ class MimeDocumentFactory extends ABCWidgetFactory {
   /**
    * Create a new widget given a context.
    */
-  createWidget(context: DocumentRegistry.IContext): Promise<Widget> {
+  create(context: DocumentRegistry.IContext): IRenderMime.IRenderer {
     let rendermime = this._rendermime.clone({ resolver: context.urlResolver });
-    let renderer = rendermime.createRenderer(this._mimeType);
+    return rendermime.createRenderer(this._mimeType);
+  }
+
+  /**
+   * Populate a widget created by this factory and its toolbar.
+   */
+  populate(widget: IRenderMime.IRenderer, context: DocumentRegistry.IContext, toolbar: Toolbar): Promise<void> {
     let handler = new Private.MimeDocumentHandler({
-      renderer,
+      renderer: widget,
       context,
       mimeType: this._mimeType,
       renderTimeout: this._renderTimeout,
       dataType: this._dataType
     });
-    return handler.render().then(() => { return renderer; });
+    return handler.render();
   }
 
   private _rendermime: RenderMimeRegistry;

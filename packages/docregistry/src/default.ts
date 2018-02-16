@@ -300,13 +300,41 @@ abstract class ABCWidgetFactory<T extends Widget = Widget, U extends DocumentReg
     this._modelName = options.modelName || 'text';
     this._preferKernel = !!options.preferKernel;
     this._canStartKernel = !!options.canStartKernel;
-    this.callback = options.callback || Private.noOp;
+    this._callback = options.callback || Private.noOp;
   }
 
   /**
-   * The callback for a new document widget created using the factory.
+   * Create a new content widget.
+   *
+   * #### Notes
+   * This happens first in the widget factory lifecycle.
    */
-  readonly callback: (widget: DocumentRegistry.IDocumentWidget<T, U>) => void;
+  abstract create(context: DocumentRegistry.IContext<U>): T;
+
+  /**
+   * Populate a widget created by this factory and its toolbar.
+   *
+   * #### Notes
+   * This happens second in the widget factory lifecycle.
+   * The returned promise is used to determine when fully
+   * populated (in addition to `context.populated`).
+   */
+  populate(widget: T, context: DocumentRegistry.IContext<U>, toolbar: Toolbar): Promise<void> {
+    return Promise.resolve(void 0);
+  }
+
+  /**
+   * Finalize a new document widget created using the factory.
+   *
+   * #### Notes
+   * This happens last in the widget factory lifecycle.
+   * This is typically where the widget factory would add the top level
+   * document widget to an instance tracker.
+   */
+  finalize(widget: DocumentRegistry.IDocumentWidget<T, U>): void {
+    const callback = this._callback;
+    callback(widget);
+  }
 
   /**
    * Get whether the model factory has been disposed.
@@ -371,11 +399,6 @@ abstract class ABCWidgetFactory<T extends Widget = Widget, U extends DocumentReg
     return this._canStartKernel;
   }
 
-  /**
-   * Create a new widget given a context and a toolbar.
-   */
-  abstract createWidget(context: Promise<DocumentRegistry.IContext<U>>, toolbar: Toolbar): T | Promise<T>;
-
   private _isDisposed = false;
   private _name: string;
   private _readOnly: boolean;
@@ -384,6 +407,7 @@ abstract class ABCWidgetFactory<T extends Widget = Widget, U extends DocumentReg
   private _modelName: string;
   private _fileTypes: string[];
   private _defaultFor: string[];
+  private _callback: (widget: DocumentRegistry.IDocumentWidget<T, U>) => void;
 }
 
 

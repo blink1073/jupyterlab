@@ -676,8 +676,22 @@ namespace DocumentRegistry {
 
     /**
      * Get the model associated with the document.
+     *
+     * #### Notes
+     * The model will be `null` until the [populated] promise is resolved.
      */
-    readonly model: T;
+    readonly model: T | null;
+
+    /**
+     * Whether the context is populated.
+     */
+    readonly isPopulated: boolean;
+
+
+    /**
+     * A promise that resolves when the context is populated.
+     */
+    readonly populated: Promise<void>;
 
     /**
      * The client session object associated with the context.
@@ -697,9 +711,12 @@ namespace DocumentRegistry {
     readonly localPath: string;
 
     /**
-     * The current contents model associated with the document
+     * The current contents model associated with the document.
+     *
+     * #### Notes
+     * This will be `null` until the [populated] promise is resolved.
      */
-    readonly contentsModel: Contents.IModel;
+    readonly contentsModel: Contents.IModel | null;
 
     /**
      * The url resolver for the context.
@@ -887,7 +904,7 @@ namespace DocumentRegistry {
      * This is typically where the widget factory would add the top level
      * document widget to an instance tracker.
      */
-    finalize(widget: IDocumentWidget<T, U>);
+    finalize(widget: IDocumentWidget<T, U>): void;
   }
 
   /**
