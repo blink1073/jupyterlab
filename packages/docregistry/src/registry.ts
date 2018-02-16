@@ -833,25 +833,52 @@ namespace DocumentRegistry {
     /**
      * The content widget for the document.
      */
-    readonly content: T | null;
+    readonly content: T;
 
     /**
      * The toolbar for the document.
      */
-    readonly toolbar: Toolbar | null;
+    readonly toolbar: Toolbar;
 
     /**
-     * A promise that resolves when the document is ready.
-     *
-     * #### Notes
-     * The content and the toolbar will be null until this is resolved.
+     * A promise that resolves when the document is initially populated.
      */
-    readonly ready: Promise<void>;
+    readonly populated: Promise<void>;
+
+    /**
+     * Whether the document is populated.
+     */
+    readonly isPopulated: boolean;
 
     /**
      * The context for the document.
      */
-    readonly context: Promise<IContext<U>>;
+    readonly context: IContext<U>;
+  }
+
+  /**
+   * The interface for a widget factory.
+   */
+  export
+  interface IWidgetFactory<T extends Widget = Widget, U extends IModel = IModel> extends IDisposable, IWidgetFactoryOptions {
+    /**
+     * A callback for a new document widget created using the factory.
+     */
+    callback: (widget: IDocumentWidget<T, U>) => void;
+
+    /**
+     * Create a new content widget.
+     */
+    create(context: IContext<U>): T;
+
+    /**
+     * Populate a widget created by this factory and its toolbar.
+     *
+     * #### Notes
+     * The returned promise is used to determine when fully
+     * populated (in addition to `context.populated`).
+     */
+    populate(widget: T, context: IContext<U>, toolbar: Toolbar): Promise<void>;
   }
 
   /**
@@ -873,22 +900,6 @@ namespace DocumentRegistry {
      * to the main area relative to a reference widget.
      */
     mode?: DockLayout.InsertMode;
-  }
-
-  /**
-   * The interface for a widget factory.
-   */
-  export
-  interface IWidgetFactory<T extends Widget = Widget, U extends IModel = IModel> extends IDisposable, IWidgetFactoryOptions {
-    /**
-     * A callback for a new document widget created using the factory.
-     */
-    callback: (widget: IDocumentWidget<T, U>) => void;
-
-    /**
-     * Create a new widget given a promise to context and a toolbar.
-     */
-    createWidget(context: Promise<IContext<U>>, toolbar: Toolbar): T | Promise<T>;
   }
 
   /**
