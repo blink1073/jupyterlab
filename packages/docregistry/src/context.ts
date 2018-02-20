@@ -2,47 +2,43 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  Contents, ServiceManager, ServerConnection
+ Contents, ServiceManager, ServerConnection
 } from '@jupyterlab/services';
 
 import {
-  JSONValue, PromiseDelegate
+ JSONValue
 } from '@phosphor/coreutils';
 
 import {
-  IDisposable, DisposableDelegate
+ IDisposable, DisposableDelegate
 } from '@phosphor/disposable';
 
 import {
-  ISignal, Signal
+ ISignal, Signal
 } from '@phosphor/signaling';
 
 import {
-  Widget
+ Widget
 } from '@phosphor/widgets';
 
 import {
-  showDialog, ClientSession, Dialog, IClientSession
+ showDialog, ClientSession, Dialog, IClientSession
 } from '@jupyterlab/apputils';
 
 import {
-  PathExt
+ PathExt
 } from '@jupyterlab/coreutils';
 
 import {
-  IModelDB, ModelDB
-} from '@jupyterlab/observables';
-
-import {
-  RenderMimeRegistry
+ RenderMimeRegistry
 } from '@jupyterlab/rendermime';
 
 import {
-  IRenderMime
+ IRenderMime
 } from '@jupyterlab/rendermime-interfaces';
 
 import {
-  DocumentRegistry
+ DocumentRegistry
 } from './registry';
 
 
@@ -57,33 +53,45 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    * Construct a new document context.
    */
   constructor(options: Context.IOptions<T>) {
-    let manager = this._manager = options.manager;
-    this._factory = options.factory;
+    const manager = this._manager = options.manager;
+    this.factory = options.factory;
     this._opener = options.opener || Private.noOp;
     this._path = options.path;
-    const localPath = this._manager.contents.localPath(this._path);
-    let lang = this._factory.preferredLanguage(PathExt.basename(localPath));
 
-    let dbFactory = options.modelDBFactory;
-    if (dbFactory) {
-      const localPath = manager.contents.localPath(this._path);
-      this._modelDB = dbFactory.createNew(localPath);
-      this._model = this._factory.createNew(lang, this._modelDB);
-    } else {
-      this._model = this._factory.createNew(lang);
-    }
-
-    this._readyPromise = manager.ready.then(() => {
-      return this._populatedPromise.promise;
+    options.contentsModel.then(contentsModel => {
+      this._contentsModel = contentsModel;
     });
 
-    let ext = PathExt.extname(this._path);
+    options.model.then(model => {
+      this._model = model;
+    });
+
+    this.populated = Promise.all([options.contentsModel, options.model]).then(() => {
+      this._isPopulated = true;
+    });
+
+    let ext = PathExt.extname(this.path);
+
+    // Update the kernel preference.
+    let kernelPreference = options.kernelPreference;
+    let name = (
+      model.defaultKernelName || kernelPreference.name
+    );
+    let language = (
+      model.defaultKernelLanguage || kernelPreference.language
+    );
+    kernelPreference = {
+      ...kernelPreference,
+      name,
+      language
+    };
+    const localPath = manager.contents.localPath(this.path);
     this.session = new ClientSession({
       manager: manager.sessions,
-      path: this._path,
+      path: this.path,
       type: ext === '.ipynb' ? 'notebook' : 'file',
       name: PathExt.basename(localPath),
-      kernelPreference: options.kernelPreference || { shouldStart: false }
+      kernelPreference
     });
     this.session.propertyChanged.connect(this._onSessionChanged, this);
     manager.contents.fileChanged.connect(this._onFileChanged, this);
@@ -92,7 +100,7 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
       session: this.session,
       contents: manager.contents
     });
-  }
+
 
   /**
    * A signal emitted when the path changes.
@@ -118,7 +126,7 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
   /**
    * Get the model associated with the document.
    */
-  get model(): T {
+  get model(): T | null {
     return this._model;
   }
 
@@ -140,29 +148,32 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    * this is the same as the path.
    */
   get localPath(): string {
-    return this._manager.contents.localPath(this._path);
+    return this._manager.contents.localPath(this.path);
   }
 
   /**
    * The current contents model associated with the document.
-   *
-   * #### Notes
-   * The contents model will be null until the context is populated.
-   * It will have an  empty `contents` field.
    */
   get contentsModel(): Contents.IModel | null {
     return this._contentsModel;
   }
 
   /**
-   * Get the model factory name.
-   *
-   * #### Notes
-   * This is not part of the `IContext` API.
+   * The model factory associated with the document.
    */
-  get factoryName(): string {
-    return this.isDisposed ? '' : this._factory.name;
+  readonly factory: DocumentRegistry.IModelFactory<T>;
+
+  /**
+   * Whether the context is populated.
+   */
+  get isPopulated(): boolean {
+    return this._isPopulated;
   }
+
+  /**
+   * A promise that resolves when the context is populated.
+   */
+  readonly populated: Promise<void>;
 
   /**
    * Test whether the context is disposed.
@@ -180,26 +191,11 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
     }
     this._isDisposed = true;
     this.session.dispose();
-    if (this._modelDB) {
-      this._modelDB.dispose();
+    if (this.model) {
+      this.model.dispose();
     }
-    this._model.dispose();
     this._disposed.emit(void 0);
     Signal.clearData(this);
-  }
-
-  /**
-   * Whether the context is ready.
-   */
-  get isReady(): boolean {
-    return this._isReady;
-  }
-
- /**
-  * A promise that is fulfilled when the context is ready.
-  */
-  get ready(): Promise<void> {
-    return this._readyPromise;
   }
 
   /**
@@ -208,64 +204,22 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
   readonly urlResolver: IRenderMime.IResolver;
 
   /**
-   * Populate the contents of the model, either from
-   * disk or from the modelDB backend.
-   *
-   * @returns a promise that resolves upon model population.
-   */
-  fromStore(): Promise<void> {
-    if (this._modelDB) {
-      return this._modelDB.connected.then(() => {
-        if (this._modelDB.isPrepopulated) {
-          this.save();
-          return void 0;
-        } else {
-          return this.revert();
-        }
-      });
-    } else {
-      return this.revert();
-    }
-  }
-
-  /**
    * Save the document contents to disk.
    */
   save(): Promise<void> {
-    let model = this._model;
-    let content: JSONValue;
-    if (this._factory.fileFormat === 'json') {
-      content = model.toJSON();
-    } else {
-      content = model.toString();
-    }
-
-    let options = {
-      type: this._factory.contentType,
-      format: this._factory.fileFormat,
-      content
-    };
-
-    return this._manager.ready.then(() => {
-      if (!model.modelDB.isCollaborative) {
-        return this._maybeSave(options);
+    return this.populated.then(() => {
+      if (!this.model.modelDB.isCollaborative) {
+        return this._maybeSave();
       }
-      return this._manager.contents.save(this._path, options);
+      return this._save();
     }).then(value => {
       if (this.isDisposed) {
         return;
       }
-      model.dirty = false;
+      this.model.dirty = false;
       this._updateContentsModel(value);
-
-      if (!this._isPopulated) {
-        return this._populate();
-      }
     }).catch(err => {
-      const localPath = this._manager.contents.localPath(this._path);
-      const name = PathExt.basename(localPath);
-      this._handleError(err, `File Save Error for ${name}`);
-      throw err;
+      this._handleError(err, 'File Save Error');
     });
   }
 
@@ -273,17 +227,17 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    * Save the document to a different path chosen by the user.
    */
   saveAs(): Promise<void> {
-    return Private.getSavePath(this._path).then(newPath => {
+    return this.populated.then(() => {
+      return Private.getSavePath(this.path);
+    }).then(newPath => {
       if (this.isDisposed || !newPath) {
         return;
       }
-      if (newPath === this._path) {
+      if (newPath === this.path) {
         return this.save();
       }
       // Make sure the path does not exist.
-      return this._manager.ready.then(() => {
-        return this._manager.contents.get(newPath);
-      }).then(() => {
+      return this._manager.contents.get(newPath).then(() => {
         return this._maybeOverWrite(newPath);
       }).catch(err => {
         if (!err.response || err.response.status !== 404) {
@@ -298,42 +252,18 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    * Revert the document contents to disk contents.
    */
   revert(): Promise<void> {
-    let opts: Contents.IFetchOptions = {
-      format: this._factory.fileFormat,
-      type: this._factory.contentType,
-      content: true
-    };
-    let path = this._path;
-    let model = this._model;
-    return this._manager.ready.then(() => {
-      return this._manager.contents.get(path, opts);
+    let contents = this._manager.contents;
+    let factory = this.factory;
+    let path = this.path;
+    return this.populated.then(() => {
+      return Private.loadModel(contents, factory, this.model, path);
     }).then(contents => {
       if (this.isDisposed) {
         return;
       }
-      let dirty = false;
-      if (contents.format === 'json') {
-        model.fromJSON(contents.content);
-      } else {
-        let content = contents.content;
-        // Convert line endings if necessary, marking the file
-        // as dirty.
-        if (content.indexOf('\r') !== -1) {
-          dirty = true;
-          content = content.replace(/\r\n|\r/g, '\n');
-        }
-        model.fromString(content);
-      }
       this._updateContentsModel(contents);
-      model.dirty = dirty;
-      if (!this._isPopulated) {
-        return this._populate();
-      }
     }).catch(err => {
-      const localPath = this._manager.contents.localPath(this._path);
-      const name = PathExt.basename(localPath);
-      this._handleError(err, `File Load Error for ${name}`);
-      throw err;
+      this._handleError(err, 'File Load Error');
     });
   }
 
@@ -342,8 +272,8 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    */
   createCheckpoint(): Promise<Contents.ICheckpointModel> {
     let contents = this._manager.contents;
-    return this._manager.ready.then(() => {
-      return contents.createCheckpoint(this._path);
+    return this.populated.then(() => {
+      return contents.createCheckpoint(this.path);
     });
   }
 
@@ -352,8 +282,8 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    */
   deleteCheckpoint(checkpointId: string): Promise<void> {
     let contents = this._manager.contents;
-    return this._manager.ready.then(() => {
-      return contents.deleteCheckpoint(this._path, checkpointId);
+    return this.populated.then(() => {
+      return contents.deleteCheckpoint(this.path, checkpointId);
     });
   }
 
@@ -362,8 +292,8 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    */
   restoreCheckpoint(checkpointId?: string): Promise<void> {
     let contents = this._manager.contents;
-    let path = this._path;
-    return this._manager.ready.then(() => {
+    let path = this.path;
+    return this.populated.then(() => {
       if (checkpointId) {
         return contents.restoreCheckpoint(path, checkpointId);
       }
@@ -382,8 +312,8 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
    */
   listCheckpoints(): Promise<Contents.ICheckpointModel[]> {
     let contents = this._manager.contents;
-    return this._manager.ready.then(() => {
-      return contents.listCheckpoints(this._path);
+    return this.populated.then(() => {
+      contents.listCheckpoints(this.path);
     });
   }
 
@@ -419,13 +349,14 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
     }
     let oldPath = change.oldValue && change.oldValue.path;
     let newPath = change.newValue && change.newValue.path;
-    if (newPath && oldPath === this._path) {
+    if (newPath && oldPath === this.path) {
       this.session.setPath(newPath);
       const localPath = this._manager.contents.localPath(newPath);
       this.session.setName(PathExt.basename(localPath));
       this._path = newPath;
       this._updateContentsModel(change.newValue as Contents.IModel);
-      this._pathChanged.emit(this._path);
+      this._hasCheckpointed = false;
+      this._pathChanged.emit(this.path);
     }
   }
 
@@ -437,8 +368,9 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
       return;
     }
     let path = this.session.path;
-    if (path !== this._path) {
+    if (path !== this.path) {
       this._path = path;
+      this._hasCheckpointed = false;
       this._pathChanged.emit(path);
     }
   }
@@ -458,7 +390,7 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
       mimetype: model.mimetype,
       format: model.format
     };
-    let mod = this._contentsModel ? this._contentsModel.last_modified : null;
+    let mod = this.contentsModel.last_modified;
     this._contentsModel = newModel;
     if (!mod || newModel.last_modified !== mod) {
       this._fileChanged.emit(newModel);
@@ -466,39 +398,20 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
   }
 
   /**
-   * Handle an initial population.
+   * Save the model.
    */
-  private _populate(): Promise<void> {
-    this._isPopulated = true;
-
-    // Add a checkpoint if none exists and the file is writable.
-    return this._maybeCheckpoint(false).then(() => {
-      if (this.isDisposed) {
-        return;
-      }
-      // Update the kernel preference.
-      let name = (
-        this._model.defaultKernelName || this.session.kernelPreference.name
-      );
-      this.session.kernelPreference = {
-        ...this.session.kernelPreference,
-        name,
-        language: this._model.defaultKernelLanguage,
-      };
-      return this.session.initialize();
-    }).then(() => {
-      this._isReady = true;
-      this._populatedPromise.resolve(void 0);
-    });
+  private _save(): Promise<Contents.IModel> {
+    return this._maybeCheckpoint().then(() => Private.saveModel(
+      this._manager.contents, this.factory, this.model, this.path
+    ));
   }
 
   /**
    * Save a file, dealing with conflicts.
    */
-  private _maybeSave(options: Partial<Contents.IModel>): Promise<Contents.IModel> {
-    let path = this._path;
+  private _maybeSave(): Promise<Contents.IModel> {
     // Make sure the file has not changed on disk.
-    let promise = this._manager.contents.get(path, { content: false });
+    let promise = this._manager.contents.get(this.path, { content: false });
     return promise.then(model => {
       if (this.isDisposed) {
         return Promise.reject('Disposed');
@@ -511,12 +424,12 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
       let tClient = new Date(modified);
       let tDisk = new Date(model.last_modified);
       if (modified && (tDisk.getTime() - tClient.getTime()) > 500) {  // 500 ms
-        return this._timeConflict(tClient, model, options);
+        return this._timeConflict(tClient, model);
       }
-      return this._manager.contents.save(path, options);
+      return this._save();
     }, (err) => {
       if (err.response && err.response.status === 404) {
-        return this._manager.contents.save(path, options);
+        return this._save();
       }
       throw err;
     });
@@ -547,25 +460,22 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
   }
 
   /**
-   * Add a checkpoint the file is writable.
+   * Add a checkpoint if the file is writable and we have not yet
+   * created a checkpoint.
    */
-  private _maybeCheckpoint(force: boolean): Promise<void> {
-    let writable = this._contentsModel && this._contentsModel.writable;
-    let promise = Promise.resolve(void 0);
-    if (!writable) {
-      return promise;
+  private _maybeCheckpoint(): Promise<void> {
+    let writable = this.contentsModel.writable;
+    if (!writable || this._hasCheckpointed) {
+      return Promise.resolve(void 0);
     }
-    if (force) {
-      promise = this.createCheckpoint();
-    } else {
-      promise = this.listCheckpoints().then(checkpoints => {
-        writable = this._contentsModel && this._contentsModel.writable;
-        if (!this.isDisposed && !checkpoints.length && writable) {
-          return this.createCheckpoint().then(() => { /* no-op */ });
-        }
-      });
-    }
-    return promise.catch(err => {
+    return this.listCheckpoints().then(checkpoints => {
+      writable = this.contentsModel.writable;
+      if (!this.isDisposed && !checkpoints.length && writable) {
+        return this.createCheckpoint().then(() => {
+          this._hasCheckpointed = true;
+        });
+      }
+    }).catch(err => {
       // Handle a read-only folder.
       if (!err.response || err.response.status !== 403) {
         throw err;
@@ -573,10 +483,10 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
     });
   }
 
-  /**
-   * Handle a time conflict.
-   */
-  private _timeConflict(tClient: Date, model: Contents.IModel, options: Partial<Contents.IModel>): Promise<Contents.IModel> {
+ /**
+  * Handle a time conflict.
+  */
+  private _timeConflict(tClient: Date, model: Contents.IModel): Promise<Contents.IModel> {
     let tDisk = new Date(model.last_modified);
     console.warn(`Last saving peformed ${tClient} ` +
                  `while the current file seems to have been saved ` +
@@ -595,8 +505,9 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
         return Promise.reject('Disposed');
       }
       if (result.button.label === 'OVERWRITE') {
-        return this._manager.contents.save(this._path, options);
-      } else if (result.button.label === 'REVERT') {
+        return this._save();
+      }
+      if (result.button.label === 'REVERT') {
         return this.revert().then(() => { return model; });
       }
     });
@@ -629,29 +540,23 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
   private _finishSaveAs(newPath: string): Promise<void> {
     this._path = newPath;
     return this.session.setPath(newPath).then(() => {
-      this.session.setName(newPath.split('/').pop()!);
-      return this.save();
+      return this.session.setName(newPath.split('/').pop()!);
     }).then(() => {
-      this._pathChanged.emit(this._path);
-      return this._maybeCheckpoint(true);
+      return this.save();
     });
   }
 
   private _manager: ServiceManager.IManager;
   private _opener: (widget: Widget, options?: DocumentRegistry.IOpenOptions) => void;
-  private _model: T;
-  private _modelDB: IModelDB;
   private _path = '';
-  private _factory: DocumentRegistry.IModelFactory<T>;
-  private _contentsModel: Contents.IModel | null = null;
-  private _readyPromise: Promise<void>;
-  private _populatedPromise = new PromiseDelegate<void>();
-  private _isPopulated = false;
-  private _isReady = false;
+  private _contentsModel: Contents.IModel | null;
+  private _model: DocumentRegistry.IModel<T> | null;
   private _isDisposed = false;
   private _pathChanged = new Signal<this, string>(this);
   private _fileChanged = new Signal<this, Contents.IModel>(this);
   private _disposed = new Signal<this, void>(this);
+  private _hasCheckpointed = false;
+  private _isPopulated = false;
 }
 
 
@@ -659,25 +564,35 @@ class Context<T extends DocumentRegistry.IModel> implements DocumentRegistry.ICo
  * A namespace for `Context` statics.
  */
 export namespace Context {
-  /**
-   * The options used to initialize a context.
-   */
-  export
-  interface IOptions<T extends DocumentRegistry.IModel> {
+ /**
+  * The options used to initialize a context.
+  */
+ export
+ interface IOptions<T extends DocumentRegistry.IModel> extends createContext.IOptions<T> {
     /**
-     * A service manager instance.
+     * The services manager for the context.
      */
     manager: ServiceManager.IManager;
 
     /**
-     * The model factory used to create the model.
+     * The model factory for the context.
      */
     factory: DocumentRegistry.IModelFactory<T>;
 
     /**
-     * The initial path of the file.
+     * The path for the context.
      */
     path: string;
+
+    /**
+     * Whether the document is new.
+     */
+    isNew: boolean;
+
+    /**
+     * A promise for when to start loading the context.
+     */
+    promise: Promise<void>;
 
     /**
      * The kernel preference associated with the context.
@@ -685,21 +600,16 @@ export namespace Context {
     kernelPreference?: IClientSession.IKernelPreference;
 
     /**
-     * An IModelDB factory method which may be used for the document.
-     */
-    modelDBFactory?: ModelDB.IFactory;
-
-    /**
      * An optional callback for opening sibling widgets.
      */
-    opener?: (widget: Widget) => void;
+    opener?: (widget: Widget, options?: DocumentRegistry.IOpenOptions) => void;
   }
 }
 
-
 /**
- * A namespace for private data.
+ * A namespace for module private functions.
  */
+export
 namespace Private {
   /**
    * Get a new file path from the user.
@@ -717,6 +627,99 @@ namespace Private {
       }
       return;
     });
+  }
+
+  /**
+   * Create a document model.
+   */
+  export
+  function createModel<T extends DocumentRegistry.IModel>(options: createModel.IOptions): Promise<T> {
+   const { manager, factory, path } = options;
+   const localPath = manager.localPath(path);
+   const dbFactory = manager.getModelDBFactory(path);
+   let lang = factory.preferredLanguage(PathExt.basename(localPath));
+   let model: DocumentRegistry.IModel;
+
+   if (dbFactory) {
+     model = factory.createNew(lang, dbFactory.createNew(localPath));
+   } else {
+     model = factory.createNew(lang);
+   }
+   return model as T;
+  }
+
+
+  /**
+   * Populate a document model.
+   */
+  export
+  function populateModel(model: DocumentRegistry.IModel): Promise<void> {
+   let modelDB = model.modelDB;
+   return modelDB.connected.then(() => {
+     if (modelDB.isPrepopulated) {
+       return Private.saveModel(manager, factory, model, path);
+     }
+   }).then(() => {
+     if (!modelDB.isPrepopulated) {
+       return Private.loadModel(manager, factory, model, path);
+     }
+   });
+  }
+
+  /**
+   * Save a model.
+   */
+  export
+  function saveModel(manager: Contents.IManager, factory: DocumentRegistry. IModelFactory, model: DocumentRegistry.IModel, path: string): Promise< Contents.IModel> {
+    let content: JSONValue;
+    if (factory.fileFormat === 'json') {
+      content = model.toJSON();
+    } else {
+      content = model.toString();
+    }
+
+    let options = {
+      type: factory.contentType,
+      format: factory.fileFormat,
+      content
+    };
+    return manager.save(path, options);
+  }
+
+  /**
+   * Load a model.
+   */
+  export
+  function loadModel(manager: Contents.IManager, factory: DocumentRegistry. IModelFactory, model: DocumentRegistry.IModel, path: string): Promise< Contents.IModel> {
+    let opts: Contents.IFetchOptions = {
+      format: factory.fileFormat,
+      type: factory.contentType,
+      content: true
+    };
+    return manager.get(path, opts).then(contents => {
+      updateModel(model, contents);
+      return contents;
+    });
+  }
+
+  /**
+   * Update a model from disk contents.
+   */
+  function updateModel(model: DocumentRegistry.IModel, contents: Contents.IModel ): void {
+    let dirty = false;
+    if (contents.format === 'json') {
+      model.fromJSON(contents.content);
+    } else {
+      let content = contents.content;
+      // Convert line endings if necessary, marking the file
+      // as dirty.
+      if (content.indexOf('\r') !== -1) {
+        dirty = true;
+        content = content.replace(/\r\n|\r/g, '\n');
+      }
+      model.fromString(content);
+    }
+    model.dirty = dirty;
   }
 
   /**

@@ -676,8 +676,11 @@ namespace DocumentRegistry {
 
     /**
      * Get the model associated with the document.
+     * #### Notes
+     * The model will be `null` until the context is populated.
+     * It will have an  empty `contents` field.
      */
-    readonly model: T;
+    readonly model: T | null;
 
     /**
      * The client session object associated with the context.
@@ -700,7 +703,7 @@ namespace DocumentRegistry {
      * The current contents model associated with the document
      *
      * #### Notes
-     * The contents model will be null until the context is ready.
+     * The contents model will be `null` until the context is populated.
      * It will have an  empty `contents` field.
      */
     readonly contentsModel: Contents.IModel | null;
@@ -711,14 +714,14 @@ namespace DocumentRegistry {
     readonly urlResolver: IRenderMime.IResolver;
 
     /**
-     * Whether the context is ready.
+     * Whether the context is populated.
      */
-    readonly isReady: boolean;
+    readonly isPopulated: boolean;
 
     /**
-     * A promise that is fulfilled when the context is ready.
+     * A promise that is fulfilled when the context is populated.
      */
-    readonly ready: Promise<void>;
+    readonly populated: Promise<void>;
 
     /**
      * Save the document contents to disk.
