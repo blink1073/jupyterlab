@@ -1262,7 +1262,7 @@ def _tarsum(input_file):
     """
     Compute the recursive sha sum of a tar file.
     """
-    tar = tarfile.open(input_file, "r")
+    tar = tarfile.open(input_file, "r:gz")
     chunk_size = 100 * 1024
     h = hashlib.new("sha1")
 
