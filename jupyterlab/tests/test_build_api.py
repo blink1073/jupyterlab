@@ -4,7 +4,8 @@ import threading
 
 from ipython_genutils.tempdir import TemporaryDirectory
 from ipython_genutils import py3compat
-from jupyterlab.tests.utils import LabTestBase, APITester
+from jupyterlab.tests.utils import TestBase, APITester
+from notebook.tests.launchnotebook import NotebookTestBase
 from notebook.tests.launchnotebook import assert_http_error
 
 
@@ -22,7 +23,7 @@ class BuildAPITester(APITester):
         return self._req('DELETE', '')
 
 
-class BuildAPITest(LabTestBase):
+class BuildAPITest(NotebookTestBase):
     """Test the build web service API"""
 
     def tempdir(self):
