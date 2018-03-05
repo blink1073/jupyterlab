@@ -4,7 +4,7 @@ import threading
 
 from ipython_genutils.tempdir import TemporaryDirectory
 from ipython_genutils import py3compat
-from jupyterlab.tests.utils import TestBase, APITester
+from jupyterlab.tests.utils import APITester
 from notebook.tests.launchnotebook import NotebookTestBase
 from notebook.tests.launchnotebook import assert_http_error
 
