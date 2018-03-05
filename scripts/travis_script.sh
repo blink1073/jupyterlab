@@ -13,7 +13,8 @@ source activate test
 
 if [[ $GROUP == py2 || $GROUP == py3 ]]; then
     # Run the python tests
-    py.test -v -s
+    py.test -v jupyterlab/tests/test_settings_api.py
+    py.test -v jupyterlab/tests
 fi
 
 
