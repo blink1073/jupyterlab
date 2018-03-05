@@ -87,11 +87,11 @@ def load_jupyter_server_extension(nbapp):
     page_config['token'] = nbapp.token
     page_config['devMode'] = dev_mode
 
-    if nbapp.file_to_run and type(nbapp).__name__ == "LabApp":
-        relpath = os.path.relpath(nbapp.file_to_run, nbapp.notebook_dir)
-        uri = url_escape(ujoin('/lab/tree', *relpath.split(os.sep)))
-        nbapp.default_url = uri
-        nbapp.file_to_run = ''
+    # if nbapp.file_to_run and type(nbapp).__name__ == "LabApp":
+    #     relpath = os.path.relpath(nbapp.file_to_run, nbapp.notebook_dir)
+    #     uri = url_escape(ujoin('/lab/tree', *relpath.split(os.sep)))
+    #     nbapp.default_url = uri
+    #     nbapp.file_to_run = ''
 
     if core_mode:
         app_dir = HERE
