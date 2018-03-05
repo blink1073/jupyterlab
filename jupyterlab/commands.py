@@ -1195,7 +1195,7 @@ def _normalize_path(extension):
 def _read_package(target):
     """Read the package data in a given target tarball.
     """
-    tar = tarfile.open(target, "r")
+    tar = tarfile.open(target, "r:gz")
     f = tar.extractfile('package/package.json')
     data = json.loads(f.read().decode('utf8'))
     data['jupyterlab_extracted_files'] = [
