@@ -23,6 +23,7 @@ class LabTestBase(NotebookTestBase):
 
     @classmethod
     def setup_class(cls):
+        print('\n\n**setting up')
         cls.tmp_dir = TemporaryDirectory()
 
         def tmp(*parts):
