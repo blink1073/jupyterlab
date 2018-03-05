@@ -36,6 +36,7 @@ mkdir ~/.jupyter
 
 # Install and enable the server extension
 pip install -v -e ".[test]"
+conda install tornado=4
 jlpm versions
 jlpm config current
 jupyter serverextension enable --py jupyterlab
