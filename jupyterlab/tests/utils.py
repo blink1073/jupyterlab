@@ -102,6 +102,7 @@ class LabTestBase(NotebookTestBase):
                 app.session_manager.close()
         cls.notebook_thread = Thread(target=start_thread)
         cls.notebook_thread.daemon = True
+        print('\n\n****starting notebook')
         cls.notebook_thread.start()
         started.wait()
         cls.wait_until_alive()
