@@ -301,6 +301,7 @@ class OutputAreaModel implements IOutputAreaModel {
     }
     each(this.list, (item: IOutputModel) => { item.dispose(); });
     this.list.clear();
+    this._pending = null;
   }
 
   /**
@@ -338,12 +339,8 @@ class OutputAreaModel implements IOutputAreaModel {
       // This also replaces the metadata of the last item.
       this._lastStream += value.text as string;
       value.text = this._lastStream;
-      this._removeOverwrittenChars(value);
-      let item = this._createItem({ value, trusted });
       let index = this.length - 1;
-      let prev = this.list.get(index);
-      prev.dispose();
-      this.list.set(index, item);
+      this._scheduleUpdate(index, value);
       return index;
     }
 
@@ -465,6 +462,42 @@ class OutputAreaModel implements IOutputAreaModel {
     this._stateChanged.emit(void 0);
   }
 
+  /**
+   * Schedule an update to a stream.
+   */
+  private _scheduleUpdate(index: number, value: nbformat.IOutput): void {
+    if (this._pending && this._pending.index !== index) {
+      this._handleUpdate()
+      return
+    }
+    if (this._pending && this._pending.index === index) {
+      this._pending = { index, value };
+      return;
+    }
+    this._pending = { index, value };
+    setTimeout(() => {
+      this._handleUpdate();
+    }, 0.1);
+  }
+
+  /**
+   * Handle a stream update.
+   */
+  private _handleUpdate(): void {
+    if (!this._pending) {
+      return;
+    }
+    const { index, value } = this._pending;
+    const trusted = this._trusted;
+    this._removeOverwrittenChars(value);
+    let item = this._createItem({ value, trusted });
+    let prev = this.list.get(index);
+    prev.dispose();
+    this.list.set(index, item);
+    this._pending = null;
+  }
+
+  private _pending: { index: number, value: nbformat.IOutput } | null;
   private _lastStream: string;
   private _lastName: 'stdout' | 'stderr';
   private _trusted = false;
