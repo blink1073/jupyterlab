@@ -1069,8 +1069,16 @@ class _AppHandler(object):
             name = data['name']
             jlab = data.get('jupyterlab', dict())
             path = osp.realpath(target)
+            # homepage, repository  are optional
+            if 'homepage' in data:
+                url = data['homepage']
+            elif 'repository' in data:
+                url = data['repository'].get('url', '')
+            else:
+                url = ''
             extensions[name] = dict(path=path,
                                     filename=osp.basename(path),
+                                    url=url,
                                     version=data['version'],
                                     jupyterlab=jlab,
                                     dependencies=deps,
@@ -1726,7 +1734,7 @@ def _semver_prerelease_key(prerelease):
 
 
 def _semver_key(version, prerelease_first=False):
-    """A sort key-function for sorting semver verion string.
+    """A sort key-function for sorting semver version string.
 
     The default sorting order is ascending (0.x -> 1.x -> 2.x).
 
@@ -1769,7 +1777,7 @@ def _fetch_package_metadata(registry, name, logger):
         logger.debug('Fetching URL: %s' % (req.get_full_url()))
     try:
         with contextlib.closing(urlopen(req)) as response:
-            return json.load(response)
+            return json.loads(response.read().decode('utf-8'))
     except URLError as exc:
         logger.warning(
             'Failed to fetch package metadata for %r: %r',

@@ -1372,13 +1372,13 @@ namespace Private {
   ): ICellModel {
     switch (cell.type) {
       case 'code':
-        // TODO why isnt modeldb or id passed here?
+        // TODO why isn't modeldb or id passed here?
         return model.contentFactory.createCodeCell({ cell: cell.toJSON() });
       case 'markdown':
-        // TODO why isnt modeldb or id passed here?
+        // TODO why isn't modeldb or id passed here?
         return model.contentFactory.createMarkdownCell({ cell: cell.toJSON() });
       default:
-        // TODO why isnt modeldb or id passed here?
+        // TODO why isn't modeldb or id passed here?
         return model.contentFactory.createRawCell({ cell: cell.toJSON() });
     }
   }
@@ -1436,8 +1436,14 @@ namespace Private {
         break;
       case 'code':
         if (session) {
-          return CodeCell.execute(cell as CodeCell, session)
+          return CodeCell.execute(cell as CodeCell, session, {
+            deletedCells: notebook.model.deletedCells
+          })
             .then(reply => {
+              notebook.model.deletedCells.splice(
+                0,
+                notebook.model.deletedCells.length
+              );
               if (cell.isDisposed) {
                 return false;
               }
@@ -1636,6 +1642,7 @@ namespace Private {
 
       if (notebook.isSelectedOrActive(child) && deletable) {
         toDelete.push(index);
+        notebook.model.deletedCells.push(child.model.id);
       }
     });
 

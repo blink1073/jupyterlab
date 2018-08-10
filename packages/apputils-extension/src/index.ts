@@ -126,7 +126,7 @@ class SettingsConnector extends DataConnector<
 }
 
 /**
- * The default commmand palette extension.
+ * The default command palette extension.
  */
 const palette: JupyterLabPlugin<ICommandPalette> = {
   activate: activatePalette,
@@ -136,7 +136,7 @@ const palette: JupyterLabPlugin<ICommandPalette> = {
 };
 
 /**
- * The default commmand palette's restoration extension.
+ * The default command palette's restoration extension.
  *
  * #### Notes
  * The command palette's restoration logic is handled separately from the
@@ -190,6 +190,14 @@ const themes: JupyterLabPlugin<IThemeManager> = {
     // can lead to an incorrect toggle on the currently used theme.
     let currentTheme: string;
 
+    // Set data attributes on the application shell for the current theme.
+    manager.themeChanged.connect((sender, args) => {
+      currentTheme = args.newValue;
+      app.shell.dataset.themeLight = String(manager.isLight(currentTheme));
+      app.shell.dataset.themeName = currentTheme;
+      commands.notifyCommandChanged(CommandIDs.changeTheme);
+    });
+
     commands.addCommand(CommandIDs.changeTheme, {
       label: args => {
         const theme = args['theme'] as string;
@@ -201,9 +209,7 @@ const themes: JupyterLabPlugin<IThemeManager> = {
         if (theme === manager.theme) {
           return;
         }
-        currentTheme = theme;
         manager.setTheme(theme);
-        commands.notifyCommandChanged(CommandIDs.changeTheme);
       }
     });
 
@@ -423,8 +429,8 @@ const state: JupyterLabPlugin<IStateDB> = {
           workspaces
             .fetch(source)
             .then(saved => {
-              // If this command is called after a reset, the state database will
-              // already be resolved.
+              // If this command is called after a reset, the state database
+              // will already be resolved.
               if (!resolved) {
                 resolved = true;
                 transform.resolve({ type: 'overwrite', contents: saved.data });
@@ -433,8 +439,8 @@ const state: JupyterLabPlugin<IStateDB> = {
             .catch(reason => {
               console.warn(`Fetching workspace (${workspace}) failed:`, reason);
 
-              // If the workspace does not exist, cancel the data transformation and
-              // save a workspace with the current user state data.
+              // If the workspace does not exist, cancel the data transformation
+              // and save a workspace with the current user state data.
               if (!resolved) {
                 resolved = true;
                 transform.resolve({ type: 'cancel', contents: null });
