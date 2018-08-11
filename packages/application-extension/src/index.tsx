@@ -18,7 +18,7 @@ import {
   showErrorMessage
 } from '@jupyterlab/apputils';
 
-import { IStateDB, PageConfig } from '@jupyterlab/coreutils';
+import { IStateDB, PageConfig, ISettingRegistry } from '@jupyterlab/coreutils';
 
 import * as React from 'react';
 
@@ -45,6 +45,10 @@ namespace CommandIDs {
     'application:toggle-presentation-mode';
 
   export const tree: string = 'router:tree';
+
+  export const moveToRightSidebar = 'application:move-to-right-area';
+
+  export const moveToLeftSidebar = 'application:move-to-left-area';
 }
 
 /**
@@ -59,11 +63,12 @@ namespace Patterns {
  */
 const main: JupyterLabPlugin<void> = {
   id: '@jupyterlab/application-extension:main',
-  requires: [ICommandPalette, IRouter, IWindowResolver],
+  requires: [ICommandPalette, IRouter, ISettingRegistry, IWindowResolver],
   activate: (
     app: JupyterLab,
     palette: ICommandPalette,
     router: IRouter,
+    settings: ISettingRegistry,
     resolver: IWindowResolver
   ) => {
     // Requiring the window resolver guarantees that the application extension
@@ -82,7 +87,7 @@ const main: JupyterLabPlugin<void> = {
       showErrorMessage('Error Registering Plugins', { message: body });
     }
 
-    addCommands(app, palette);
+    addCommands(app, palette, settings);
 
     // If the application shell layout is modified,
     // trigger a refresh of the commands.
@@ -308,7 +313,11 @@ const busy: JupyterLabPlugin<void> = {
 /**
  * Add the main application commands.
  */
-function addCommands(app: JupyterLab, palette: ICommandPalette): void {
+function addCommands(
+  app: JupyterLab,
+  palette: ICommandPalette,
+  settings: ISettingRegistry
+): void {
   const category = 'Main Area';
   let command = CommandIDs.activateNextTab;
 
@@ -371,6 +380,24 @@ function addCommands(app: JupyterLab, palette: ICommandPalette): void {
     },
     isToggled: () => !app.shell.rightCollapsed,
     isVisible: () => !app.shell.isEmpty('right')
+  });
+  palette.addItem({ command, category });
+
+  command = CommandIDs.moveToLeftSidebar;
+  app.commands.addCommand(command, {
+    label: 'Move Active Widget to Right Sidebar',
+    execute: () => {
+      app.shell.moveLeftActiveToRightArea();
+    }
+  });
+  palette.addItem({ command, category });
+
+  command = CommandIDs.moveToRightSidebar;
+  app.commands.addCommand(command, {
+    label: 'Move Active Widget to Left Sidebar',
+    execute: args => {
+      app.shell.moveRightActiveToLeftArea();
+    }
   });
   palette.addItem({ command, category });
 
