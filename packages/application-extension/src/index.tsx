@@ -68,7 +68,6 @@ const main: JupyterLabPlugin<void> = {
     app: JupyterLab,
     palette: ICommandPalette,
     router: IRouter,
-    settings: ISettingRegistry,
     resolver: IWindowResolver
   ) => {
     // Requiring the window resolver guarantees that the application extension
@@ -87,7 +86,7 @@ const main: JupyterLabPlugin<void> = {
       showErrorMessage('Error Registering Plugins', { message: body });
     }
 
-    addCommands(app, palette, settings);
+    addCommands(app, palette);
 
     // If the application shell layout is modified,
     // trigger a refresh of the commands.
@@ -313,11 +312,7 @@ const busy: JupyterLabPlugin<void> = {
 /**
  * Add the main application commands.
  */
-function addCommands(
-  app: JupyterLab,
-  palette: ICommandPalette,
-  settings: ISettingRegistry
-): void {
+function addCommands(app: JupyterLab, palette: ICommandPalette): void {
   const category = 'Main Area';
   let command = CommandIDs.activateNextTab;
 
