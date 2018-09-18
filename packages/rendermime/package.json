@@ -41,9 +41,11 @@
     "@phosphor/messaging": "^1.2.2",
     "@phosphor/signaling": "^1.2.2",
     "@phosphor/widgets": "^1.6.0",
+    "lodash.escape": "^4.0.1",
     "marked": "~0.4.0"
   },
   "devDependencies": {
+    "@types/lodash.escape": "^4.0.4",
     "@types/marked": "~0.3.0",
     "rimraf": "~2.6.2",
     "typescript": "~2.9.2"
