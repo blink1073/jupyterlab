@@ -78,9 +78,9 @@
     "@phosphor/disposable" "^1.1.2"
     "@phosphor/signaling" "^1.2.2"
 
-"@jupyterlab/buildutils@^0.9.4":
-  version "0.9.4"
-  resolved "https://registry.npmjs.org/@jupyterlab/buildutils/-/buildutils-0.9.4.tgz#ecaad9f0df6ce5840a737e9e6e352ef9a6bf49cf"
+"@jupyterlab/buildutils@^0.10.2":
+  version "0.10.2"
+  resolved "https://registry.yarnpkg.com/@jupyterlab/buildutils/-/buildutils-0.10.2.tgz#4a92adec212399c53ac69cd076620c74293ad71e"
   dependencies:
     child_process "~1.0.2"
     fs-extra "~4.0.2"
@@ -642,7 +642,6 @@
     "@phosphor/messaging" "^1.2.2"
     "@phosphor/signaling" "^1.2.2"
     "@phosphor/widgets" "^1.6.0"
-    ansi_up "^3.0.0"
     marked "~0.4.0"
 
 "@jupyterlab/running-extension@^0.18.4":
@@ -1137,10 +1136,6 @@ ansi-styles@^3.2.1:
   resolved "https://registry.npmjs.org/ansi-styles/-/ansi-styles-3.2.1.tgz#41fbb20243e50b12be0f04b8dedbf07520ce841d"
   dependencies:
     color-convert "^1.9.0"
-
-ansi_up@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.npmjs.org/ansi_up/-/ansi_up-3.0.0.tgz#27f45d8f457d9ceff59e4ea03c8e6f13c1a303e8"
 
 anymatch@^2.0.0:
   version "2.0.0"
