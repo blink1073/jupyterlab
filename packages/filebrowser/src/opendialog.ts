@@ -11,7 +11,7 @@ import { Contents } from '@jupyterlab/services';
 
 import { FileBrowser } from './browser';
 import { FileBrowserModel } from './model';
-import { IFileBrowserFactory } from './factory';
+import { IFileBrowserFactory } from './tokens';
 
 /**
  * The class name added to open file dialog
