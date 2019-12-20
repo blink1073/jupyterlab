@@ -36,6 +36,7 @@ import { each, iter, toArray } from '@lumino/algorithm';
 import { Widget, DockLayout } from '@lumino/widgets';
 
 import * as React from 'react';
+import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 
 /**
  * The command IDs used by the application plugin.
@@ -765,6 +766,52 @@ const paths: JupyterFrontEndPlugin<JupyterFrontEnd.IPaths> = {
   provides: JupyterFrontEnd.IPaths
 };
 
+import { MainAreaWidget } from '@jupyterlab/apputils';
+
+import { editorServices } from '@jupyterlab/codemirror';
+
+import { StaticNotebook, NotebookModel } from '@jupyterlab/notebook';
+
+declare var require: any;
+
+/**
+ * The default JupyterLab paths dictionary provider.
+ */
+const staticDisplay: JupyterFrontEndPlugin<void> = {
+  id: '@jupyterlab/apputils-extension:staticDisplay',
+  requires: [IRenderMimeRegistry],
+  activate: (app: JupyterFrontEnd, rendermime: IRenderMimeRegistry): void => {
+    // Create the main area widget for the shared notebook.
+    // Create the notebook renderer.
+    void app.restored.then(() => {
+      const content = new StaticNotebook({
+        rendermime,
+        mimeTypeService: editorServices.mimeTypeService
+      });
+      const nbModel = new NotebookModel();
+      nbModel.mimeType = 'text/x-python';
+      let nbContent = JSON.stringify(
+        require('@jupyterlab/application/style/Untitled.json')
+      );
+
+      nbModel.fromString(nbContent);
+      content.model = nbModel;
+      const widget = new MainAreaWidget({ content });
+      widget.id = `static_notebook`;
+      widget.title.label = 'test test';
+
+      // Model must be populated after the widget is added.
+      //  content.widgets.forEach(cell => {
+      //    cell.readOnly = true;
+      //  });
+
+      app.shell.add(widget, 'main');
+      console.log('***here 5');
+    });
+  },
+  autoStart: true
+};
+
 /**
  * Export the plugins as default.
  */
@@ -779,7 +826,8 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   shell,
   status,
   info,
-  paths
+  paths,
+  staticDisplay
 ];
 
 export default plugins;
