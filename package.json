@@ -10,6 +10,7 @@
       "packages/services/examples/browser",
       "packages/services/examples/typescript-browser-with-output",
       "buildutils",
+      "builder",
       "buildutils/template",
       "buildutils/test-template",
       "tests",
