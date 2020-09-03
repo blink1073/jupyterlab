@@ -6,4 +6,4 @@ import os
 argv = sys.argv[1:] + ['--config', 'binder/jupyter_notebook_config.py']
 print(argv)
 
-os.execv(shutil.which(argv[0]), argv)
+os.execv(shutil.which("jupyter-lab"), argv)
