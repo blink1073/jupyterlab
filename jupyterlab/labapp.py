@@ -10,6 +10,7 @@ import os.path as osp
 from os.path import join as pjoin
 import sys
 from jinja2 import Environment, FileSystemLoader
+from urllib.parse import urljoin
 
 from jupyter_core.application import JupyterApp, base_aliases, base_flags
 from jupyter_core.application import NoStart
@@ -584,8 +585,9 @@ class LabApp(NBClassicConfigShimMixin, LabServerApp):
         if self.override_static_url:
             return self.override_static_url
         else:
-            return "/static/{name}/".format(
+            static_url = "/static/{name}/".format(
             name=self.name)
+            return urljoin(self.serverapp.base_url, static_url)
 
     @default('theme_url')
     def _default_theme_url(self):
