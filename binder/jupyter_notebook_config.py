@@ -25,7 +25,7 @@ c.ServerProxy.servers = {
     }
 }
 
-c.ServerApp.default_url = '/lab-dev'
+c.NotebookApp.default_url = '/lab-dev'
 
 import logging
-c.ServerApp.log_level = logging.DEBUG
+c.NotebookApp.log_level = logging.DEBUG
